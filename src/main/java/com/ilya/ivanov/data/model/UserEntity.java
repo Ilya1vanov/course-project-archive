@@ -7,18 +7,19 @@ import javax.persistence.*;
  */
 @Entity
 @Table(name = "users")
-public class User {
+public class UserEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "user_id")
     private Long id;
 
+    @Column(name = "email")
     private String email;
 
-    // spring boot + javaFX
-    // email
-    // spring security for standalone app
-    // sessions for standalone app
-    // bean validation
-    // jndi
+    @Column(name = "password")
+    private String password;
+
+    @Enumerated
+    @Column(name = "role")
+    private Role role;
 }
