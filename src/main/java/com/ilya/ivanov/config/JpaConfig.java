@@ -31,42 +31,21 @@ import java.util.Properties;
 public class JpaConfig {
     private final Environment env;
 
-//    private final String database;
-
     @Autowired
     public JpaConfig(Environment env) {
         this.env = env;
     }
 
     @Bean
-    @Profile("dev")
-    public DataSource embeddedDataSource() {
-        return new EmbeddedDatabaseBuilder()
-                .setType(EmbeddedDatabaseType.H2)
-//                .addScript("classpath:test-data.sql")
-                .build();
-    }
-
-    @Bean
-    @Profile("prod")
     @ConfigurationProperties(prefix = "spring.datasource")
     public DataSource dataSource() {
         return DataSourceBuilder.create().build();
-//        final DriverManagerDataSource dataSource = new DriverManagerDataSource();
-//        dataSource.setDriverClassName(env.getProperty("spring.datasource.driver-class-name"));
-//        dataSource.setUrl(env.getProperty("spring.datasource.url"));
-//        dataSource.setUsername(env.getProperty("spring.datasource.username"));
-//        dataSource.setPassword(env.getProperty("spring.datasource.password"));
-//        return dataSource;
     }
 
     @Bean
     public LocalContainerEntityManagerFactoryBean entityManagerFactory() {
         HibernateJpaVendorAdapter vendorAdapter = new HibernateJpaVendorAdapter();
-        if (env.acceptsProfiles("prod", "QA"))
-            vendorAdapter.setDatabase(Database.valueOf(env.getProperty("db.type")));
-        else if (env.acceptsProfiles("dev", "test"))
-            vendorAdapter.setDatabase(Database.H2);
+        vendorAdapter.setDatabase(env.getProperty("spring.jpa.database", Database.class));
 
         vendorAdapter.setGenerateDdl(env.getProperty("spring.jpa.generate-ddl", Boolean.class));
         vendorAdapter.setShowSql(env.getProperty("spring.jpa.show-sql", Boolean.class));
@@ -75,10 +54,7 @@ public class JpaConfig {
         emFactory.setJpaVendorAdapter(vendorAdapter);
         emFactory.setPackagesToScan("server.spring.data.model");
 
-        if (env.acceptsProfiles("prod", "QA"))
-            emFactory.setDataSource(dataSource());
-        else if (env.acceptsProfiles("dev", "test"))
-            emFactory.setDataSource(embeddedDataSource());
+        emFactory.setDataSource(dataSource());
 
         Properties jpaProperties = new Properties();
         jpaProperties.setProperty("hibernate.hbm2ddl.auto", env.getProperty("spring.jpa.hibernate.ddl-auto"));
