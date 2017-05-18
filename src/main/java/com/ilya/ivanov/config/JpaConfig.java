@@ -52,7 +52,7 @@ public class JpaConfig {
 
         LocalContainerEntityManagerFactoryBean emFactory = new LocalContainerEntityManagerFactoryBean();
         emFactory.setJpaVendorAdapter(vendorAdapter);
-        emFactory.setPackagesToScan("server.spring.data.model");
+        emFactory.setPackagesToScan("com.ilya.ivanov.data.model");
 
         emFactory.setDataSource(dataSource());
 
