@@ -2,7 +2,9 @@ package com.ilya.ivanov.data.model;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Configurable;
+import org.springframework.context.annotation.Scope;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import javax.persistence.*;
@@ -12,7 +14,9 @@ import javax.persistence.*;
  */
 @Entity
 @Table(name = "users")
-@Configurable(dependencyCheck = true)
+@Component
+@Configurable(dependencyCheck = true, preConstruction = true)
+@Scope("prototype")
 public class UserEntity {
     public static final Role DEFAULT = Role.USER;
 
@@ -47,14 +51,15 @@ public class UserEntity {
 
     public UserEntity(String email, String password, Role role) {
         this.email = email;
-        this.password = password;
+        this.setPassword(password);
+//        this.password = password;
         this.role = role;
     }
-
-    @PostConstruct
-    private void init() {
-        this.setPassword(password);
-    }
+//
+//    @PostConstruct
+//    private void init() {
+//        this.setPassword(password);
+//    }
 
     public Long getId() {
         return id;
