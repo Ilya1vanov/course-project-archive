@@ -14,9 +14,14 @@ import javax.persistence.*;
  */
 @Entity
 @Table(name = "users")
-//@Configurable(preConstruction = true, dependencyCheck = true)
+@Component
+@Configurable(dependencyCheck = true, preConstruction = true)
+@Scope("prototype")
 public class UserEntity {
     public static final Role DEFAULT = Role.USER;
+
+    @Transient
+    private PasswordEncoder passwordEncoder;
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -47,8 +52,14 @@ public class UserEntity {
     public UserEntity(String email, String password, Role role) {
         this.email = email;
         this.setPassword(password);
+//        this.password = password;
         this.role = role;
     }
+//
+//    @PostConstruct
+//    private void init() {
+//        this.setPassword(password);
+//    }
 
     public Long getId() {
         return id;
@@ -67,7 +78,7 @@ public class UserEntity {
     }
 
     public void setPassword(String password) {
-        this.password = password;
+        this.password = passwordEncoder.encode(password);
     }
 
     public Role getRole() {
@@ -76,5 +87,10 @@ public class UserEntity {
 
     public void setRole(Role role) {
         this.role = role;
+    }
+
+    @Autowired
+    public void setPasswordEncoder(PasswordEncoder passwordEncoder) {
+        this.passwordEncoder = passwordEncoder;
     }
 }
