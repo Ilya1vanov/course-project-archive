@@ -4,17 +4,17 @@ package com.ilya.ivanov.data.model;
  * Created by ilya on 5/18/17.
  */
 public enum Role {
-    guest(Role.read),
-    user(guest.getPermissions() | Role.execute | Role.write),
-    admin(user.getPermissions() | Role.edit);
+    GUEST(Role.read),
+    USER(GUEST.getPermissions() | Role.execute | Role.write),
+    ADMIN(USER.getPermissions() | Role.edit);
 
-    // allows user to browse the data
+    // allows USER to browse the data
     private static final int read = 0x1;
-    //allows user to open files
+    //allows USER to open files
     private static final int execute = 0x2;
-    // allows user to add files; rename and remove his own files
+    // allows USER to add files; rename and remove his own files
     private static final int write = 0x4;
-    // allows user to remove all files
+    // allows USER to remove all files
     private static final int edit = 0x8;
 
     private final int permissions;
