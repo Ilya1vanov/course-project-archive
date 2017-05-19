@@ -7,4 +7,5 @@ import org.springframework.data.jpa.repository.JpaRepository;
  * Created by ilya on 5/18/17.
  */
 public interface UserRepository extends JpaRepository<UserEntity, Long> {
+    UserEntity findByEmailAndPassword(String email, String password);
 }
