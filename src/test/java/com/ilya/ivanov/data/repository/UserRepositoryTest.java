@@ -2,6 +2,7 @@ package com.ilya.ivanov.data.repository;
 
 import com.github.springtestdbunit.DbUnitTestExecutionListener;
 import com.github.springtestdbunit.annotation.DatabaseSetup;
+import com.ilya.ivanov.config.AppConfig;
 import com.ilya.ivanov.config.JpaConfig;
 import com.ilya.ivanov.data.model.UserEntity;
 import org.fest.assertions.Assertions;
@@ -27,7 +28,7 @@ import static org.junit.Assert.*;
 /**
  * Created by ilya on 5/19/17.
  */
-@ContextConfiguration(loader = AnnotationConfigContextLoader.class, classes = {JpaConfig.class})
+@ContextConfiguration(loader = AnnotationConfigContextLoader.class, classes = {JpaConfig.class, AppConfig.class})
 @RunWith(SpringJUnit4ClassRunner.class)
 @Transactional
 @TestExecutionListeners({DependencyInjectionTestExecutionListener.class, DirtiesContextTestExecutionListener.class,

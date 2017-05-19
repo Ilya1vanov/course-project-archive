@@ -52,14 +52,8 @@ public class UserEntity {
     public UserEntity(String email, String password, Role role) {
         this.email = email;
         this.setPassword(password);
-//        this.password = password;
         this.role = role;
     }
-//
-//    @PostConstruct
-//    private void init() {
-//        this.setPassword(password);
-//    }
 
     public Long getId() {
         return id;
