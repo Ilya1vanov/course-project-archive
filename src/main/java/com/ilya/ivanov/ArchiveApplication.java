@@ -10,6 +10,7 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.EnableAspectJAutoProxy;
 import org.springframework.core.env.Environment;
 
 import javax.validation.ConstraintViolation;
@@ -20,6 +21,7 @@ import java.util.Set;
 
 @SpringBootApplication
 @EntityScan( basePackages = {"com.ilya.ivanov.data.model"} )
+@EnableAspectJAutoProxy(proxyTargetClass = true)
 public class ArchiveApplication {
 	private static final Logger log = Logger.getLogger(ArchiveApplication.class);
 
@@ -31,6 +33,7 @@ public class ArchiveApplication {
     public CommandLineRunner runner(UserRepository repository, Environment env, Validator validator) {
 	    return (args) -> {
             UserEntity userEntity = new UserEntity("email", "pass", Role.ADMIN);
+            userEntity.setPassword("password");
             log.debug(userEntity.getPassword());
             repository.save(userEntity);
             List<UserEntity> all = repository.findAll();
