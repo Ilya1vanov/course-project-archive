@@ -17,9 +17,8 @@ import javax.persistence.*;
 @Entity
 @Table(name = "users")
 @Component
-//@Lazy
+@Lazy
 @Scope("prototype")
-//@Configurable
 public class UserEntity {
     private static final Role DEFAULT = Role.USER;
 

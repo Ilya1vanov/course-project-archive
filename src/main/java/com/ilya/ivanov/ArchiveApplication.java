@@ -4,6 +4,8 @@ import com.ilya.ivanov.data.model.Role;
 import com.ilya.ivanov.data.model.UserDto;
 import com.ilya.ivanov.data.model.UserEntity;
 import com.ilya.ivanov.data.repository.UserRepository;
+import com.ilya.ivanov.view.AbstractJavaFxApplicationSupport;
+import javafx.stage.Stage;
 import org.apache.log4j.Logger;
 import org.springframework.beans.MutablePropertyValues;
 import org.springframework.beans.PropertyValues;
@@ -31,26 +33,25 @@ import java.util.Set;
 
 @SpringBootApplication
 //@EntityScan( basePackages = {"com.ilya.ivanov.data.model"} )
-public class ArchiveApplication {
+public class ArchiveApplication extends AbstractJavaFxApplicationSupport {
 	private static final Logger log = Logger.getLogger(ArchiveApplication.class);
 
 	public static void main(String[] args) {
-		SpringApplication.run(ArchiveApplication.class, args);
+        launchApp(ArchiveApplication.class, args);
 	}
+
+    @Override
+    public void start(Stage primaryStage) throws Exception {
+
+    }
 
 	@Bean
     @Profile("dev")
-    public CommandLineRunner development(UserRepository repository, Environment env, Validator validator) {
+    public CommandLineRunner development(UserRepository repository, PasswordEncoder encoder, Validator validator) {
 	    return (args) -> {
-			UserEntity userEntity = new UserEntity("email", "pass", Role.ADMIN);
-            repository.save(userEntity);
-            List<UserEntity> all = repository.findAll();
-            all.forEach(System.out::println);
-            log.info(Arrays.toString(env.getActiveProfiles()));
+            addAdmin(repository, encoder);
 			UserDto dto = new UserDto();
 			dto.setEmail("asd");
-			dto.setPassword("s");
-			dto.setPassword("a");
             Set<ConstraintViolation<UserDto>> validate = validator.validate(dto);
 			validate.forEach(System.out::println);
 		};
@@ -59,11 +60,13 @@ public class ArchiveApplication {
     @Bean
     @Profile("prod")
     public CommandLineRunner production(UserRepository repository, PasswordEncoder encoder) {
-        return (args) -> {
-            String password = encoder.encode("ilya");
-            UserEntity admin = new UserEntity("com.ilya.ivanov@gmail.com", password, Role.ADMIN);
-            if (!repository.exists(Example.of(admin)))
-                repository.save(admin);
-        };
+        return (args) -> addAdmin(repository, encoder);
+    }
+
+    private void addAdmin(UserRepository repository, PasswordEncoder encoder) {
+        String password = encoder.encode("ilya");
+        UserEntity admin = new UserEntity("com.ilya.ivanov@gmail.com", password, Role.ADMIN);
+        if (!repository.exists(Example.of(admin)))
+            repository.save(admin);
     }
 }

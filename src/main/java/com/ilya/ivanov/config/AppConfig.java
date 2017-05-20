@@ -30,11 +30,4 @@ public class AppConfig {
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
-
-//    @Bean
-//    public EncodingAspect encoding() {
-//        EncodingAspect encodingAspect = new EncodingAspect();
-//        encodingAspect.setPasswordEncoder(passwordEncoder());
-//        return encodingAspect;
-//    }
 }

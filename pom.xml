@@ -176,7 +176,14 @@
             <artifactId>guava</artifactId>
             <version>r09</version>
         </dependency>
-	</dependencies>
+
+        <!--GUI-->
+        <dependency>
+            <groupId>de.roskenet</groupId>
+            <artifactId>springboot-javafx-support</artifactId>
+            <version>1.3.21</version>
+        </dependency>
+    </dependencies>
 
 	<build>
 		<plugins>

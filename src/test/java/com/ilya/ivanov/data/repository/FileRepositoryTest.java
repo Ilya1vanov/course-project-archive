@@ -4,6 +4,7 @@ import com.ilya.ivanov.config.AppConfig;
 import com.ilya.ivanov.config.JpaConfig;
 import com.ilya.ivanov.data.model.FileEntity;
 import org.fest.assertions.Assertions;
+import org.fest.assertions.Condition;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -88,5 +89,15 @@ public class FileRepositoryTest {
         fileRepository.delete(userFromDb);
 
         assertNull(fileRepository.findOne(userFromDb.getId()));
+    }
+
+    @Test
+    public void deleteShouldBeCascade() {
+        List<FileEntity> allBefore = fileRepository.findAll();
+        fileRepository.delete(root);
+
+        List<FileEntity> all = fileRepository.findAll();
+        Assertions.assertThat(allBefore).isNotEmpty().hasSize(3);
+        Assertions.assertThat(all).isEmpty();
     }
 }
