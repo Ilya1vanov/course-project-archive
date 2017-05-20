@@ -1,6 +1,5 @@
 package com.ilya.ivanov.config;
 
-import com.ilya.ivanov.data.model.FileEntity;
 import org.springframework.context.annotation.*;
 import org.springframework.context.annotation.aspectj.EnableSpringConfigured;
 import org.springframework.context.support.PropertySourcesPlaceholderConfigurer;
@@ -31,4 +30,11 @@ public class AppConfig {
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
+
+//    @Bean
+//    public EncodingAspect encoding() {
+//        EncodingAspect encodingAspect = new EncodingAspect();
+//        encodingAspect.setPasswordEncoder(passwordEncoder());
+//        return encodingAspect;
+//    }
 }

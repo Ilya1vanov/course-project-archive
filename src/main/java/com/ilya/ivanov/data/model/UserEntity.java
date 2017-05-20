@@ -2,6 +2,8 @@ package com.ilya.ivanov.data.model;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Configurable;
+import org.springframework.context.annotation.DependsOn;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.context.annotation.Scope;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
@@ -15,8 +17,9 @@ import javax.persistence.*;
 @Entity
 @Table(name = "users")
 @Component
-@Configurable(dependencyCheck = true, preConstruction = true)
+//@Lazy
 @Scope("prototype")
+//@Configurable
 public class UserEntity {
     private static final Role DEFAULT = Role.USER;
 

@@ -1,21 +1,27 @@
 package com.ilya.ivanov;
 
-import com.ilya.ivanov.data.model.FileEntity;
 import com.ilya.ivanov.data.model.Role;
 import com.ilya.ivanov.data.model.UserDto;
 import com.ilya.ivanov.data.model.UserEntity;
 import com.ilya.ivanov.data.repository.UserRepository;
 import org.apache.log4j.Logger;
+import org.springframework.beans.MutablePropertyValues;
+import org.springframework.beans.PropertyValues;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.autoconfigure.domain.EntityScan;
+import org.springframework.boot.bind.PropertySourcesPropertyValues;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.EnableAspectJAutoProxy;
 import org.springframework.context.annotation.Profile;
 import org.springframework.core.env.Environment;
+import org.springframework.core.env.PropertySources;
 import org.springframework.data.domain.Example;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.validation.BindingResult;
+import org.springframework.validation.DataBinder;
+import org.springframework.validation.MapBindingResult;
+import org.springframework.validation.ValidationUtils;
+import org.springframework.validation.beanvalidation.CustomValidatorBean;
 
 import javax.validation.ConstraintViolation;
 import javax.validation.Validator;
@@ -36,10 +42,7 @@ public class ArchiveApplication {
     @Profile("dev")
     public CommandLineRunner development(UserRepository repository, Environment env, Validator validator) {
 	    return (args) -> {
-			FileEntity placeholder = FileEntity.getPlaceholder();
 			UserEntity userEntity = new UserEntity("email", "pass", Role.ADMIN);
-            userEntity.setPassword("password");
-            log.debug(userEntity.getPassword());
             repository.save(userEntity);
             List<UserEntity> all = repository.findAll();
             all.forEach(System.out::println);
@@ -48,7 +51,7 @@ public class ArchiveApplication {
 			dto.setEmail("asd");
 			dto.setPassword("s");
 			dto.setPassword("a");
-			Set<ConstraintViolation<UserDto>> validate = validator.validate(dto);
+            Set<ConstraintViolation<UserDto>> validate = validator.validate(dto);
 			validate.forEach(System.out::println);
 		};
     }
@@ -63,5 +66,4 @@ public class ArchiveApplication {
                 repository.save(admin);
         };
     }
-
 }
