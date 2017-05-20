@@ -18,10 +18,7 @@ import javax.persistence.*;
 @Configurable(dependencyCheck = true, preConstruction = true)
 @Scope("prototype")
 public class UserEntity {
-    public static final Role DEFAULT = Role.USER;
-
-    @Transient
-    private PasswordEncoder passwordEncoder;
+    private static final Role DEFAULT = Role.USER;
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -51,7 +48,7 @@ public class UserEntity {
 
     public UserEntity(String email, String password, Role role) {
         this.email = email;
-        this.setPassword(password);
+        this.password = password;
         this.role = role;
     }
 
@@ -72,7 +69,7 @@ public class UserEntity {
     }
 
     public void setPassword(String password) {
-        this.password = passwordEncoder.encode(password);
+        this.password = password;
     }
 
     public Role getRole() {
@@ -83,8 +80,29 @@ public class UserEntity {
         this.role = role;
     }
 
-    @Autowired
-    public void setPasswordEncoder(PasswordEncoder passwordEncoder) {
-        this.passwordEncoder = passwordEncoder;
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        UserEntity that = (UserEntity) o;
+
+        return id != null ? id.equals(that.id) : that.id == null;
+    }
+
+    @Override
+    public int hashCode() {
+        return id != null ? id.hashCode() : 0;
+    }
+
+    @Override
+    public String toString() {
+        return "UserEntity{" +
+                "id=" + id +
+                ", email='" + email + '\'' +
+                ", password='" + password + '\'' +
+                ", role=" + role +
+                ", root=" + root +
+                '}';
     }
 }

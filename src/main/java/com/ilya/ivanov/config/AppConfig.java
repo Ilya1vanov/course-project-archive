@@ -1,10 +1,7 @@
 package com.ilya.ivanov.config;
 
 import com.ilya.ivanov.data.model.FileEntity;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.EnableAspectJAutoProxy;
-import org.springframework.context.annotation.PropertySource;
+import org.springframework.context.annotation.*;
 import org.springframework.context.annotation.aspectj.EnableSpringConfigured;
 import org.springframework.context.support.PropertySourcesPlaceholderConfigurer;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -14,8 +11,11 @@ import org.springframework.security.crypto.password.PasswordEncoder;
  * Created by ilya on 5/19/17.
  */
 @Configuration
+@ComponentScan(basePackages = {"com.ilya.ivanov"})
 @EnableSpringConfigured
+@EnableAspectJAutoProxy(proxyTargetClass = true)
 @PropertySource("classpath:application.properties")
+@PropertySource("classpath:application-${spring.profiles.active}.properties")
 public class AppConfig {
     /**
      * {@link PropertySourcesPlaceholderConfigurer} have to define as static
@@ -30,9 +30,5 @@ public class AppConfig {
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
-    }
-
-    public FileEntity placeholder(FileEntity parent) {
-        return new FileEntity(parent);
     }
 }

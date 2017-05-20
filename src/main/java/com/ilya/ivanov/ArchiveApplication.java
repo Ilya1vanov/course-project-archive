@@ -1,5 +1,6 @@
 package com.ilya.ivanov;
 
+import com.ilya.ivanov.data.model.FileEntity;
 import com.ilya.ivanov.data.model.Role;
 import com.ilya.ivanov.data.model.UserDto;
 import com.ilya.ivanov.data.model.UserEntity;
@@ -11,7 +12,10 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
+import org.springframework.context.annotation.Profile;
 import org.springframework.core.env.Environment;
+import org.springframework.data.domain.Example;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import javax.validation.ConstraintViolation;
 import javax.validation.Validator;
@@ -20,8 +24,7 @@ import java.util.List;
 import java.util.Set;
 
 @SpringBootApplication
-@EntityScan( basePackages = {"com.ilya.ivanov.data.model"} )
-@EnableAspectJAutoProxy(proxyTargetClass = true)
+//@EntityScan( basePackages = {"com.ilya.ivanov.data.model"} )
 public class ArchiveApplication {
 	private static final Logger log = Logger.getLogger(ArchiveApplication.class);
 
@@ -30,9 +33,11 @@ public class ArchiveApplication {
 	}
 
 	@Bean
-    public CommandLineRunner runner(UserRepository repository, Environment env, Validator validator) {
+    @Profile("dev")
+    public CommandLineRunner development(UserRepository repository, Environment env, Validator validator) {
 	    return (args) -> {
-            UserEntity userEntity = new UserEntity("email", "pass", Role.ADMIN);
+			FileEntity placeholder = FileEntity.getPlaceholder();
+			UserEntity userEntity = new UserEntity("email", "pass", Role.ADMIN);
             userEntity.setPassword("password");
             log.debug(userEntity.getPassword());
             repository.save(userEntity);
@@ -47,4 +52,16 @@ public class ArchiveApplication {
 			validate.forEach(System.out::println);
 		};
     }
+
+    @Bean
+    @Profile("prod")
+    public CommandLineRunner production(UserRepository repository, PasswordEncoder encoder) {
+        return (args) -> {
+            String password = encoder.encode("ilya");
+            UserEntity admin = new UserEntity("com.ilya.ivanov@gmail.com", password, Role.ADMIN);
+            if (!repository.exists(Example.of(admin)))
+                repository.save(admin);
+        };
+    }
+
 }
