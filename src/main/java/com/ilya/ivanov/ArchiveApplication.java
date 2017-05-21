@@ -1,7 +1,6 @@
 package com.ilya.ivanov;
 
 import com.ilya.ivanov.data.model.Role;
-import com.ilya.ivanov.data.model.UserDto;
 import com.ilya.ivanov.data.model.UserEntity;
 import com.ilya.ivanov.data.repository.UserRepository;
 import com.ilya.ivanov.view.AbstractJavaFxApplicationSupport;
@@ -13,8 +12,6 @@ import org.apache.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ImportResource;
 import org.springframework.context.annotation.Profile;
@@ -22,14 +19,7 @@ import org.springframework.core.env.Environment;
 import org.springframework.data.domain.Example;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
-import org.springframework.validation.BindingResult;
-import org.springframework.validation.DataBinder;
-import org.springframework.validation.ValidationUtils;
-import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
-
-import javax.validation.ConstraintViolation;
 import javax.validation.Validator;
-import java.util.Set;
 
 @SpringBootApplication
 @Component

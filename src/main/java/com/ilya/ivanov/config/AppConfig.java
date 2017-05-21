@@ -14,9 +14,6 @@ import static org.springframework.context.annotation.ComponentScan.Filter;
  * Created by ilya on 5/19/17.
  */
 @Configuration
-//@ComponentScan(basePackages = {"com.ilya.ivanov"}, excludeFilters = {
-//    @Filter(type = FilterType.ASSIGNABLE_TYPE, classes = ArchiveApplication.class),
-//    @Filter(type = FilterType.ANNOTATION, value = Configuration.class)})
 @PropertySource("classpath:application.properties")
 @PropertySource("classpath:application-${spring.profiles.active}.properties")
 public class AppConfig {

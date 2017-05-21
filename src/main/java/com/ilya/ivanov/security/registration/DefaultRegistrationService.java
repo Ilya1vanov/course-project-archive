@@ -38,7 +38,7 @@ public class DefaultRegistrationService implements RegistrationService {
     public Optional<UserEntity> register(UserDto user) throws Exception {
         UserEntity existing = userRepository.findByEmail(user.getEmail());
         if (existing != null) {
-            return null;
+            return Optional.empty();
         }
 
         if(credentialsPolicy == null) {

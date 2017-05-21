@@ -21,7 +21,10 @@ public class SessionManager {
     }
 
     public Session getSession() {
-        return session;
+        if (session != null && session.isValid())
+            return session;
+        else
+            throw new IllegalStateException("Invalid session");
     }
 
     public boolean hasValidSession() {
