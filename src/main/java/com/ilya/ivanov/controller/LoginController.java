@@ -13,8 +13,11 @@ import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.GridPane;
 import javafx.scene.text.Text;
+import org.hibernate.validator.internal.engine.ConstraintViolationImpl;
+import org.hibernate.validator.internal.engine.constraintvalidation.ConstraintValidatorContextImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import javax.validation.ConstraintValidatorContext;
 import javax.validation.ConstraintViolation;
 import javax.validation.Validator;
 import java.util.Optional;
@@ -63,6 +66,7 @@ public class LoginController {
         UserDto userDto =
                 new UserDto(emailField.getText(), passwordField.getText(), confirmPasswordField.getText());
         Set<ConstraintViolation<UserDto>> violations = validator.validate(userDto);
+        boolean rejectedEmail = false;
         if (violations.isEmpty()) {
             Optional<UserEntity> register = registrationService.register(userDto);
             if (register.isPresent()) {
@@ -70,11 +74,12 @@ public class LoginController {
                 return;
             }
             else {
-//                violations.add();
+                rejectedEmail = true;
             }
         }
-        if (!violations.isEmpty()) {
-            warningText.setText(violations.stream().findAny().get().getMessage());
+        if (!violations.isEmpty() || rejectedEmail) {
+            String text = rejectedEmail ? "Email exists" : violations.iterator().next().getMessage();
+            warningText.setText(text);
             warningText.setVisible(true);
         }
     }

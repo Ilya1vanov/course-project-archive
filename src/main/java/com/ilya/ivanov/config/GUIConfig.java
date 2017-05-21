@@ -13,7 +13,6 @@ import org.springframework.context.annotation.DependsOn;
  */
 @Configuration
 @ComponentScan(basePackages = "com.ilya.ivanov.view")
-@DependsOn("viewManager")
 public class GUIConfig {
     private final ViewManager viewManager;
 

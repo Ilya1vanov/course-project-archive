@@ -3,6 +3,7 @@ package com.ilya.ivanov.security.authentication;
 import com.ilya.ivanov.data.model.UserEntity;
 import com.ilya.ivanov.data.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 import java.util.Optional;
@@ -14,13 +15,20 @@ import java.util.Optional;
 public class DefaultAuthenticationService implements AuthenticationService {
     private final UserRepository userRepository;
 
+    private final PasswordEncoder passwordEncoder;
+
     @Autowired
-    public DefaultAuthenticationService(UserRepository userRepository) {
+    public DefaultAuthenticationService(UserRepository userRepository, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @Override
     public Optional<UserEntity> authenticate(String email, String password) {
-        return Optional.ofNullable(userRepository.findByEmailAndPassword(email, password));
+        UserEntity byEmailAndPassword = userRepository.findByEmail(email);
+        if (byEmailAndPassword != null && passwordEncoder.matches(password, byEmailAndPassword.getPassword()))
+            return Optional.of(byEmailAndPassword);
+        else
+            return Optional.empty();
     }
 }

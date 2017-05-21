@@ -58,11 +58,15 @@ public class FileEntity {
     @Column(name = "file")
     private byte[] file;
 
+    @Transient
+    private boolean check;
+
     private FileEntity() {}
 
     private FileEntity(FileEntity parent, String filename) {
         this.setParent(parent);
         this.filename = filename;
+        this.check = true;
     }
 
     private FileEntity(FileEntity parent, List<FileEntity> children, String filename) {
@@ -94,25 +98,27 @@ public class FileEntity {
 
     @PostConstruct
     private void checkRep() {
-        assert filename != null;
-        assert !filename.isEmpty(): "Filename is empty";
-        assert fileSize != null;
+        if (check) {
+            assert filename != null;
+            assert !filename.isEmpty() : "Filename is empty";
+            assert fileSize != null;
 
-        if (parent != null) {
-            assert parent.isDirectory() : "Parent entity is not a directory";
-            assert parent.getChildren().contains(this) : "Parent doesn't contain this as children";
-        }
-        if (isFile()) {
-            assert file != null;
-            assert lastModified != null;
+            if (parent != null) {
+                assert parent.isDirectory() : "Parent entity is not a directory";
+                assert parent.getChildren().contains(this) : "Parent doesn't contain this as children";
+            }
+            if (isFile()) {
+                assert file != null;
+                assert lastModified != null;
 //            assert parent != null;
-            assert children == null: "File has not null children";
-        } else if (isDirectory()) {
-            assert children != null;
-            assert lastModified == null: "Directory has not null last modified";
-            assert file == null: "Directory has not null file field";
-        } else
-            assert false: "Cannot determine type of entity";
+                assert children == null : "File has not null children";
+            } else if (isDirectory()) {
+                assert children != null;
+                assert lastModified == null : "Directory has not null last modified";
+                assert file == null : "Directory has not null file field";
+            } else
+                assert false : "Cannot determine type of entity";
+        }
     }
 
     public Long getId() {

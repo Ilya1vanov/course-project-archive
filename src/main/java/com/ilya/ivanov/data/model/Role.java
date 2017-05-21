@@ -4,8 +4,8 @@ package com.ilya.ivanov.data.model;
  * Created by ilya on 5/18/17.
  */
 public enum Role {
-    USER(Role.READ | Role.EXECUTE | Role.WRITE | Role.EDIT),
-    ADMIN(USER.getPermissions() | Role.ADMINISTRATE);
+    USER(Role.READ | Role.EXECUTE | Role.WRITE | Role.EDIT, "User-mode"),
+    ADMIN(USER.getPermissions() | Role.ADMINISTRATE, "Admin-mode");
 
     // allows USER to browse the data
     private static final int READ = 0x1;
@@ -20,12 +20,15 @@ public enum Role {
 
     private final int permissions;
 
+    private final String description;
+
     private int getPermissions() {
         return permissions;
     }
 
-    Role(int permissions) {
+    Role(int permissions, String description) {
         this.permissions = permissions;
+        this.description = description;
     }
 
     public boolean hasReadPermission() {
@@ -50,5 +53,9 @@ public enum Role {
 
     public boolean hasRole(Role role) {
         return permissions >= role.getPermissions();
+    }
+
+    public String getDescription() {
+        return description;
     }
 }

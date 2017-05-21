@@ -14,6 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ImportResource;
 import org.springframework.context.annotation.Profile;
@@ -23,6 +24,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.DataBinder;
+import org.springframework.validation.ValidationUtils;
 import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
 
 import javax.validation.ConstraintViolation;
@@ -31,7 +33,7 @@ import java.util.Set;
 
 @SpringBootApplication
 @Component
-@ImportResource("classpath:gui-context.xml")
+@ImportResource({"classpath:gui-context.xml", "classpath:aspect-context.xml"})
 //@EntityScan( basePackages = {"com.ilya.ivanov.data.model"} )
 public class ArchiveApplication extends AbstractJavaFxApplicationSupport {
 	private static final Logger log = Logger.getLogger(ArchiveApplication.class);
@@ -70,15 +72,7 @@ public class ArchiveApplication extends AbstractJavaFxApplicationSupport {
     public CommandLineRunner development(UserRepository repository, PasswordEncoder encoder, Validator validator) {
 	    return (args) -> {
             addAdmin(repository, encoder);
-			UserDto dto = new UserDto("asd", "a", "v");
-            DataBinder dataBinder = new DataBinder(dto);
-//            dataBinder.bind();
-            LocalValidatorFactoryBean localValidator = new LocalValidatorFactoryBean();
-
-            dataBinder.setValidator(localValidator);
-            dataBinder.validate();
-            BindingResult bindingResult = dataBinder.getBindingResult();
-		};
+        };
     }
 
     @Bean
@@ -90,7 +84,7 @@ public class ArchiveApplication extends AbstractJavaFxApplicationSupport {
     private void addAdmin(UserRepository repository, PasswordEncoder encoder) {
         String password = encoder.encode("ilya");
         UserEntity admin = new UserEntity("com.ilya.ivanov@gmail.com", password, Role.ADMIN);
-        if (!repository.exists(Example.of(new UserEntity(admin.getEmail(), null, null, null))))
+        if (!repository.exists(Example.of(new UserEntity(admin.getEmail(), password, Role.ADMIN, null))))
             repository.save(admin);
     }
 }

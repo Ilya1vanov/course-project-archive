@@ -16,7 +16,7 @@ public class UserDto {
     private String email;
 
     @NotNull
-    @Size(min = 5, max = 25)
+    @Size(min = 5, max = 25, message = "Password size: 5 - 25")
     private String password;
 
     private String matchingPassword;
