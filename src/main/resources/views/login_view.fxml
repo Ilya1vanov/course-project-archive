@@ -1,52 +1,85 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <?import javafx.geometry.Insets?>
-<?import javafx.scene.control.*?>
 <?import javafx.scene.Cursor?>
-<?import javafx.scene.layout.*?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.PasswordField?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.ColumnConstraints?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.RowConstraints?>
+<?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.text.Text?>
 
-<GridPane
-		fx:controller="com.ilya.ivanov.controller.LoginController"
-		xmlns:fx="http://javafx.com/fxml" alignment="center" hgap="10" vgap="10"
-		xmlns="http://javafx.com/javafx/8">
-	<padding>
-		<Insets top="25" right="25" bottom="10" left="25" />
-	</padding>
+<GridPane alignment="center" hgap="10" vgap="10" xmlns="http://javafx.com/javafx/8.0.111" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.ilya.ivanov.controller.LoginController">
+    <padding>
+        <Insets bottom="10" left="25" right="25" top="25" />
+    </padding>
 
-		<Text text="Welcome to 'Catty' home catalog"
-			  GridPane.columnIndex="0" GridPane.rowIndex="0" GridPane.columnSpan="2" />
+    <Text text="Welcome to 'Catty' home catalog" GridPane.columnIndex="0" GridPane.columnSpan="2" GridPane.rowIndex="0" />
 
-		<Label text="Login:" GridPane.columnIndex="0" GridPane.rowIndex="1" />
+    <Label text="Email:" GridPane.columnIndex="0" GridPane.rowIndex="1" />
+    <TextField fx:id="emailField" onKeyPressed="#handleFieldChanged" promptText="Email" GridPane.columnIndex="1" GridPane.rowIndex="1" />
 
-		<TextField fx:id="loginField" GridPane.columnIndex="1" promptText="Login"
-				   onKeyPressed="#handleLoginChanged" GridPane.rowIndex="1" />
+    <Label text="Password:" GridPane.columnIndex="0" GridPane.rowIndex="2" />
+    <PasswordField fx:id="passwordField" onKeyPressed="#handleFieldChanged" promptText="Password" GridPane.columnIndex="1" GridPane.rowIndex="2" />
+    <StackPane GridPane.columnSpan="2" GridPane.rowIndex="3" GridPane.rowSpan="2">
+        <GridPane fx:id="registrationPane" visible="false">
+            <columnConstraints>
+                <ColumnConstraints hgrow="SOMETIMES" maxWidth="118.0" minWidth="10.0" prefWidth="75.0" />
+                <ColumnConstraints hgrow="SOMETIMES" maxWidth="172.0" minWidth="10.0" prefWidth="172.0" />
+            </columnConstraints>
+            <rowConstraints>
+                <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+            </rowConstraints>
+         <Text fill="BLUE" onMouseClicked="#handleLoginSwitch" text="Back" underline="true" GridPane.rowIndex="1">
+            <cursor>
+               <Cursor fx:constant="CLOSED_HAND" />
+            </cursor>
+         </Text>
+            <Label text="Confirm:" />
+            <PasswordField fx:id="confirmPasswordField" onKeyPressed="#handleFieldChanged" prefHeight="26.0" prefWidth="164.0" promptText="Password" GridPane.columnIndex="1" />
+            <HBox alignment="bottom_right" spacing="10" GridPane.columnIndex="1" GridPane.rowIndex="1">
+                <Button fx:id="signUpBtn" defaultButton="true" onAction="#handleSignUp" text="Sign Up" />
+            </HBox>
+        </GridPane>
+        <GridPane fx:id="loginPane">
+            <columnConstraints>
+                <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" />
+            <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
+            </columnConstraints>
+            <rowConstraints>
+                <RowConstraints minHeight="10.0" vgrow="SOMETIMES" />
+                <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+            </rowConstraints>
 
-		<Label text="Password:" GridPane.columnIndex="0"
-			   GridPane.rowIndex="2" />
+            <Text fill="BLUE" onMouseClicked="#handleRegistrationSwitch" text="Registration" underline="true">
+                <cursor>
+                    <Cursor fx:constant="CLOSED_HAND" />
+                </cursor>
+            </Text>
 
-		<PasswordField fx:id="passwordField" promptText="Password"
-					   GridPane.columnIndex="1" GridPane.rowIndex="2" onKeyPressed="#handlePasswordChanged"/>
+            <HBox alignment="bottom_right" spacing="10" GridPane.columnIndex="1">
+                <Button fx:id="signInBtn" defaultButton="true" disable="true" onAction="#handleSignIn" text="Sign In" />
+            </HBox>
+        </GridPane>
+    </StackPane>
 
-		<Text text="Sign in as a guest" underline="true" fill="BLUE"
-			  GridPane.columnIndex="0" GridPane.rowIndex="4" onMouseClicked="#handleSignInAsGuest">
-			<cursor>
-				<Cursor fx:constant="CLOSED_HAND" />
-			</cursor>
-		</Text>
-
-		<HBox spacing="10" alignment="bottom_right" GridPane.columnIndex="1"
-			  GridPane.rowIndex="4">
-            <Pane>
-                <Button fx:id="submitButton" defaultButton="true" text="Sign In" onAction="#handleSubmitButtonAction"
-                        disable="true"/>
-            </Pane>
-		</HBox>
-
-		<Text text="Wrong login or password!" fx:id="warningText" fill="RED"
-			  visible="false" GridPane.columnIndex="0" GridPane.columnSpan="2"
-			  GridPane.halignment="RIGHT" GridPane.rowIndex="6" />
-
+    <Text fx:id="warningText" fill="RED" text="Wrong login or password!" visible="false" GridPane.columnIndex="0" GridPane.columnSpan="2" GridPane.halignment="RIGHT" GridPane.rowIndex="6" />
+   <columnConstraints>
+      <ColumnConstraints />
+      <ColumnConstraints />
+   </columnConstraints>
+   <rowConstraints>
+      <RowConstraints />
+      <RowConstraints />
+      <RowConstraints />
+      <RowConstraints />
+      <RowConstraints />
+      <RowConstraints />
+      <RowConstraints />
+   </rowConstraints>
 </GridPane>
-
-

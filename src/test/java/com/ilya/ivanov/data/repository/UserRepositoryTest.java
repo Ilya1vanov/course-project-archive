@@ -31,7 +31,7 @@ import static org.junit.Assert.*;
  * Created by ilya on 5/19/17.
  */
 @ActiveProfiles(profiles = "dev")
-@ContextConfiguration(loader = AnnotationConfigContextLoader.class, classes = {JpaConfig.class, AppConfig.class})
+@ContextConfiguration(loader = AnnotationConfigContextLoader.class, classes = {JpaConfig.class})
 @RunWith(SpringJUnit4ClassRunner.class)
 @Transactional
 @TestExecutionListeners({DependencyInjectionTestExecutionListener.class, DirtiesContextTestExecutionListener.class,
@@ -97,8 +97,8 @@ public class UserRepositoryTest {
 
     @Test
     public void testCountByLogin() {
-        final boolean ilya = userRepository.exists(Example.of(new UserEntity("ilya@gmail.com", null, null)));
-        final boolean nonexistent = userRepository.exists(Example.of(new UserEntity("nonexistent login", null, null)));
+        final boolean ilya = userRepository.exists(Example.of(new UserEntity("ilya@gmail.com", null, null, null)));
+        final boolean nonexistent = userRepository.exists(Example.of(new UserEntity("nonexistent login", null, null, null)));
         assertThat(ilya, is(true));
         assertThat(nonexistent, is(false));
     }

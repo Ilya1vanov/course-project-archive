@@ -1,6 +1,8 @@
 package com.ilya.ivanov.data.model;
 
 import com.ilya.ivanov.config.AppConfig;
+import com.ilya.ivanov.config.AspectConfig;
+import com.ilya.ivanov.config.JpaConfig;
 import org.fest.assertions.Assertions;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -21,7 +23,8 @@ import static org.hamcrest.core.IsNull.notNullValue;
  * Created by ilya on 5/20/17.
  */
 @RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(loader = AnnotationConfigContextLoader.class, classes = {AppConfig.class})
+@ContextConfiguration(loader = AnnotationConfigContextLoader.class,
+        classes = {JpaConfig.class, AspectConfig.class})
 // VM options: -ea
 public class FileEntityTest {
     @Test
@@ -31,6 +34,11 @@ public class FileEntityTest {
 
     @Test
     public void noAssertionsOnFileCreation() throws Exception {
+        FileEntity.createFile(null, "dir1",  null);
+    }
+
+    @Test(expected = BeanCreationException.class)
+    public void assertionOnEmptyFilename() throws Exception {
         FileEntity.createFile(null, "",  null);
     }
 
@@ -52,6 +60,4 @@ public class FileEntityTest {
 
         assertThat(file, nullValue());
     }
-
-
 }

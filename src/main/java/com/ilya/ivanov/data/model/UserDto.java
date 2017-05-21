@@ -19,10 +19,15 @@ public class UserDto {
     @Size(min = 5, max = 25)
     private String password;
 
-    @NotNull
     private String matchingPassword;
 
-    public UserDto() {
+    private UserDto() {
+    }
+
+    public UserDto(String email, String password, String matchingPassword) {
+        this.email = email;
+        this.password = password;
+        this.matchingPassword = matchingPassword;
     }
 
     public String getEmail() {

@@ -1,4 +1,4 @@
-package com.ilya.ivanov.view.browser;
+package com.ilya.ivanov.view;
 
 import java.awt.*;
 import java.io.File;

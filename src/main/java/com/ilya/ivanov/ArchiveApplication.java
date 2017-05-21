@@ -5,44 +5,64 @@ import com.ilya.ivanov.data.model.UserDto;
 import com.ilya.ivanov.data.model.UserEntity;
 import com.ilya.ivanov.data.repository.UserRepository;
 import com.ilya.ivanov.view.AbstractJavaFxApplicationSupport;
+import com.ilya.ivanov.view.ViewManager;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
 import javafx.stage.Stage;
 import org.apache.log4j.Logger;
-import org.springframework.beans.MutablePropertyValues;
-import org.springframework.beans.PropertyValues;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
-import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.bind.PropertySourcesPropertyValues;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.ImportResource;
 import org.springframework.context.annotation.Profile;
 import org.springframework.core.env.Environment;
-import org.springframework.core.env.PropertySources;
 import org.springframework.data.domain.Example;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Component;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.DataBinder;
-import org.springframework.validation.MapBindingResult;
-import org.springframework.validation.ValidationUtils;
-import org.springframework.validation.beanvalidation.CustomValidatorBean;
+import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
 
 import javax.validation.ConstraintViolation;
 import javax.validation.Validator;
-import java.util.Arrays;
-import java.util.List;
 import java.util.Set;
 
 @SpringBootApplication
+@Component
+@ImportResource("classpath:gui-context.xml")
 //@EntityScan( basePackages = {"com.ilya.ivanov.data.model"} )
 public class ArchiveApplication extends AbstractJavaFxApplicationSupport {
 	private static final Logger log = Logger.getLogger(ArchiveApplication.class);
 
-	public static void main(String[] args) {
+    @Autowired private ViewManager viewManager;
+
+    @Autowired private Environment env;
+
+    public static void main(String[] args) {
         launchApp(ArchiveApplication.class, args);
 	}
 
     @Override
     public void start(Stage primaryStage) throws Exception {
+        Stage mainStage = primaryStage;
+        mainStage.setTitle(env.getProperty("ui.views.main.title"));
+        mainStage.setMinWidth(env.getProperty("ui.views.main.minWidth", Double.class));
+        mainStage.setMinHeight(env.getProperty("ui.views.main.minHeight", Double.class));
+        mainStage.setResizable(env.getProperty("ui.views.main.resizable", Boolean.class));
+        Parent mainView = viewManager.getView("mainView").getView();
+        mainStage.setScene(new Scene(mainView));
 
+        Stage loginStage = new Stage();
+        loginStage.setTitle(env.getProperty("ui.views.login.title"));
+        loginStage.setMinWidth(env.getProperty("ui.views.login.minWidth", Double.class));
+        loginStage.setMinHeight(env.getProperty("ui.views.login.minHeight", Double.class));
+        loginStage.setResizable(env.getProperty("ui.views.login.resizable", Boolean.class));
+        Parent loginView = viewManager.getView("loginView").getView();
+        loginStage.setScene(new Scene(loginView));
+
+        viewManager.hideAllAndShow("loginView");
     }
 
 	@Bean
@@ -50,10 +70,14 @@ public class ArchiveApplication extends AbstractJavaFxApplicationSupport {
     public CommandLineRunner development(UserRepository repository, PasswordEncoder encoder, Validator validator) {
 	    return (args) -> {
             addAdmin(repository, encoder);
-			UserDto dto = new UserDto();
-			dto.setEmail("asd");
-            Set<ConstraintViolation<UserDto>> validate = validator.validate(dto);
-			validate.forEach(System.out::println);
+			UserDto dto = new UserDto("asd", "a", "v");
+            DataBinder dataBinder = new DataBinder(dto);
+//            dataBinder.bind();
+            LocalValidatorFactoryBean localValidator = new LocalValidatorFactoryBean();
+
+            dataBinder.setValidator(localValidator);
+            dataBinder.validate();
+            BindingResult bindingResult = dataBinder.getBindingResult();
 		};
     }
 
@@ -66,7 +90,7 @@ public class ArchiveApplication extends AbstractJavaFxApplicationSupport {
     private void addAdmin(UserRepository repository, PasswordEncoder encoder) {
         String password = encoder.encode("ilya");
         UserEntity admin = new UserEntity("com.ilya.ivanov@gmail.com", password, Role.ADMIN);
-        if (!repository.exists(Example.of(admin)))
+        if (!repository.exists(Example.of(new UserEntity(admin.getEmail(), null, null, null))))
             repository.save(admin);
     }
 }

@@ -176,7 +176,10 @@ public class FileEntity {
     }
 
     public Date getLastModified() {
-        return (Date) lastModified.clone();
+        if (isFile())
+            return (Date) lastModified.clone();
+        else
+            return null;
     }
 
     public void setLastModified(Date lastModified) {

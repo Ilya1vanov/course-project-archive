@@ -37,7 +37,7 @@ public class UserEntity {
     @Column(name = "role")
     private Role role;
 
-    @OneToOne
+    @OneToOne(cascade = CascadeType.ALL)
     @JoinColumn(name = "root_id")
     private FileEntity root;
 
@@ -49,9 +49,14 @@ public class UserEntity {
     }
 
     public UserEntity(String email, String password, Role role) {
+        this(email, password, role, FileEntity.createDirectory(null, null,"root"));
+    }
+
+    public UserEntity(String email, String password, Role role, FileEntity root) {
         this.email = email;
         this.password = password;
         this.role = role;
+        this.root = root;
     }
 
     public Long getId() {
@@ -80,6 +85,34 @@ public class UserEntity {
 
     public void setRole(Role role) {
         this.role = role;
+    }
+
+    public FileEntity getRoot() {
+        return root;
+    }
+
+    public boolean hasReadPermission() {
+        return role.hasReadPermission();
+    }
+
+    public boolean hasWritePermission() {
+        return role.hasWritePermission();
+    }
+
+    public boolean hasExecutePermission() {
+        return role.hasExecutePermission();
+    }
+
+    public boolean hasEditPermission() {
+        return role.hasEditPermission();
+    }
+
+    public boolean hasAdminPermission() {
+        return role.hasAdminPermission();
+    }
+
+    public boolean hasRole(Role role) {
+        return this.role.hasRole(role);
     }
 
     @Override

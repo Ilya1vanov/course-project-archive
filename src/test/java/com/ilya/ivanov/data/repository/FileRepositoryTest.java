@@ -29,7 +29,7 @@ import static org.junit.Assert.*;
  * Created by ilya on 5/19/17.
  */
 @ActiveProfiles(profiles = "dev")
-@ContextConfiguration(loader = AnnotationConfigContextLoader.class, classes = {JpaConfig.class, AppConfig.class})
+@ContextConfiguration(loader = AnnotationConfigContextLoader.class, classes = {JpaConfig.class})
 @RunWith(SpringJUnit4ClassRunner.class)
 @Transactional
 @TestExecutionListeners({DependencyInjectionTestExecutionListener.class, DirtiesContextTestExecutionListener.class,
