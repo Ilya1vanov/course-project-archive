@@ -18,7 +18,7 @@ public class SessionManager implements ApplicationContextAware {
     public Session newSession(UserEntity userEntity) {
         if (hasValidSession())
             invalidateSession();
-        final Session session = new Session(userEntity);
+        this.session = new Session(userEntity);
         context.publishEvent(new NewSessionEvent(session));
         return session;
     }

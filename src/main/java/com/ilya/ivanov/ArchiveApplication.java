@@ -8,17 +8,13 @@ import com.ilya.ivanov.data.repository.UserRepository;
 import com.ilya.ivanov.security.session.SessionManager;
 import com.ilya.ivanov.view.AbstractJavaFxApplicationSupport;
 import com.ilya.ivanov.view.ViewManager;
-import javafx.event.EventHandler;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
-import javafx.stage.WindowEvent;
 import org.apache.log4j.Logger;
-import org.jscience.physics.amount.Amount;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ImportResource;
 import org.springframework.context.annotation.Profile;
@@ -26,11 +22,6 @@ import org.springframework.core.env.Environment;
 import org.springframework.data.domain.Example;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
-
-import javax.measure.quantity.DataAmount;
-import javax.measure.unit.CompoundUnit;
-import javax.measure.unit.NonSI;
-import javax.measure.unit.SI;
 import javax.validation.Validator;
 import java.io.IOException;
 import java.util.Objects;
@@ -95,7 +86,7 @@ public class ArchiveApplication extends AbstractJavaFxApplicationSupport {
         admin.getRoot().createDirectory(null, "dir2");
         final FileEntity dir1 = admin.getRoot().createDirectory(null, "dir1");
         for (int i = 0; i < 40; i++) {
-            dir1.createFile("file-" + i, new byte[]{2, 3, 4});
+            dir1.createFile("file-" + i, new byte[]{'1', '2', '.', '0', '1'});
         }
         if (!repository.exists(Example.of(new UserEntity(admin.getEmail(), null, null, null))))
             repository.save(admin);

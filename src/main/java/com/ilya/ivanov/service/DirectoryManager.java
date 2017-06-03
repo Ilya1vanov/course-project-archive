@@ -1,4 +1,4 @@
-package com.ilya.ivanov.model;
+package com.ilya.ivanov.service;
 
 import org.apache.log4j.Logger;
 import org.springframework.stereotype.Component;
@@ -16,8 +16,6 @@ import java.nio.file.Paths;
 public class DirectoryManager {
     /* log4j logger */
     private static final Logger log = Logger.getLogger(DirectoryManager.class);
-
-
 
     public File createTempDirectory(String dir) throws IOException {
         Path temp = Files.createTempDirectory(Paths.get(dir), null);

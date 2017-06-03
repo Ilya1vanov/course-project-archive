@@ -2,7 +2,7 @@
 <beans xmlns="http://www.springframework.org/schema/beans"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
        xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
-    <bean id="sessionAspect" class="com.ilya.ivanov.aspect.MailAspect" factory-method="aspectOf">
+    <bean id="sessionAspect" class="com.ilya.ivanov.aspect.ActivityTrackingAspect" factory-method="aspectOf">
         <property name="applicationContextProvider" ref="applicationContextProvider"/>
     </bean>
     <bean id="applicationContextProvider" class="com.ilya.ivanov.aspect.help.ApplicationContextProvider"/>

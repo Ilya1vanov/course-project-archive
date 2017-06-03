@@ -11,6 +11,8 @@ import com.ilya.ivanov.service.file.FileService;
 import com.ilya.ivanov.service.search.SearchService;
 import com.ilya.ivanov.view.CSSDriver;
 import com.ilya.ivanov.view.ViewManager;
+import impl.org.controlsfx.skin.DecorationPane;
+import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
 import javafx.beans.binding.BooleanBinding;
 import javafx.collections.FXCollections;
@@ -24,28 +26,36 @@ import javafx.scene.layout.*;
 import javafx.scene.text.Text;
 import javafx.stage.FileChooser;
 import javafx.stage.Modality;
+import javafx.stage.Window;
+import org.apache.commons.lang3.ArrayUtils;
 import org.controlsfx.control.action.Action;
 import org.controlsfx.control.action.ActionUtils;
 import org.controlsfx.control.textfield.TextFields;
+import org.controlsfx.dialog.ExceptionDialog;
+import org.controlsfx.validation.ValidationSupport;
+import org.controlsfx.validation.Validator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationListener;
 import org.springframework.context.annotation.Bean;
 
 import javax.annotation.PostConstruct;
 import java.io.File;
+import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import java.util.zip.DataFormatException;
 
 /**
  * Created by ilya on 5/20/17.
  */
 public class MainController implements ApplicationListener<NewSessionEvent> {
     @FXML private VBox root;
-    @FXML private HBox controlButtons;
     @FXML private Button addButton;
     @FXML private Button removeButton;
     @FXML private Text userNameLetter;
@@ -56,7 +66,6 @@ public class MainController implements ApplicationListener<NewSessionEvent> {
     @FXML private Label workingStatusBar;
     @FXML private VBox searchLayout;
     @FXML private TableView<FileEntity> searchTable;
-    @FXML private AnchorPane searchStatusBar;
     @FXML private Text searchResultText;
     @FXML private Pagination searchPagination;
 
@@ -68,6 +77,8 @@ public class MainController implements ApplicationListener<NewSessionEvent> {
     private Action downloadFileAction;
 
     private Alert removeConfirmation;
+    private CustomDialog addDirectoryDialog;
+    private CustomDialog renameFileDialog;
     private ContextMenu mainTableMenu;
 
     private SessionManager sessionManager;
@@ -75,6 +86,8 @@ public class MainController implements ApplicationListener<NewSessionEvent> {
     private FileService fileService;
     private SearchService searchService;
     private CSSDriver cssDriver;
+
+    private final ExecutorService executor = Executors.newWorkStealingPool();
 
     /** JavaFX initialize */
     public void initialize() {
@@ -174,8 +187,7 @@ public class MainController implements ApplicationListener<NewSessionEvent> {
                 if (row.isEmpty() && onEmpty != null)
                     onEmpty.run();
             } else if (event.getClickCount() == 2 && !row.isEmpty() && row.getItem().isFile()) {
-                // TODO
-//                    handleOpen(row);
+                openFileAction.handle(new ActionEvent());
             }
         });
     }
@@ -189,14 +201,18 @@ public class MainController implements ApplicationListener<NewSessionEvent> {
     }
 
     private void initializeDialogs() {
+        final Window owner = viewManager.getView("mainView").getView().getScene().getWindow();
         removeConfirmation = new Alert(Alert.AlertType.CONFIRMATION, "Are you sure?") {
             {
                 setTitle("Remove");
-                setHeaderText("Confirm deletion!");
+                setHeaderText("Confirm operation!");
                 initModality(Modality.APPLICATION_MODAL);
-                initOwner(viewManager.getView("mainView").getView().getScene().getWindow());
+                initOwner(owner);
             }
         };
+        addDirectoryDialog = new CustomDialog(owner, "Add new directory", "Directory name");
+        addDirectoryDialog.setInitialText("New directory");
+        renameFileDialog = new CustomDialog(owner, "Rename", "New name");
     }
 
     private void initializeContextMenus() {
@@ -372,47 +388,85 @@ public class MainController implements ApplicationListener<NewSessionEvent> {
 
     @Bean("addDirectoryAction")
     private Action addDirectoryAction() {
-        final Action addDirectoryAction = new Action("Add directory", (e) -> {
-            Optional<String> result = new TextInputDialog() {
-                {
-                    setTitle("Add directory");
-                    setContentText("Directory name: ");
-                }
-            }.showAndWait();
-            if (result.isPresent()) {
-                final TreeItem<FileEntity> parent = determineParentItem();
-                final Collection<FileEntity> files = fileService.addDirectory(parent.getValue(), result.get());
-                parent.getChildren().addAll(files.stream().map(this::createNode).collect(Collectors.toList()));
+        return new NamingAction("Add directory") {
+            {
+                setEventHandler((e) -> {
+                    final TreeItem<FileEntity> parent = determineParentItem();
+                    final List<String> childrenNames = getChildrenNames(parent, directory);
+                    addDirectoryDialog.reattachValidator(Validator.createPredicateValidator(
+                            (o) -> !childrenNames.contains(o.toString()),
+                            "Already in this directory"));
+                    final Optional<String> result = addDirectoryDialog.showAndWait();
+                    if (result.isPresent()) {
+                        final Collection<FileEntity> files = fileService.addDirectory(parent.getValue(), result.get());
+                        parent.getChildren().addAll(files.stream().map(MainController.this::createNode).collect(Collectors.toList()));
+                    }
+                });
+                setAccelerator(new KeyCodeCombination(KeyCode.A, KeyCombination.CONTROL_DOWN, KeyCombination.ALT_DOWN));
             }
-        });
-        addDirectoryAction.setAccelerator(new KeyCodeCombination(KeyCode.A, KeyCombination.CONTROL_DOWN, KeyCombination.ALT_DOWN));
-        return addDirectoryAction;
+        };
     }
 
     @Bean("renameFileAction")
     private Action renameFileAction() {
-        final Action renameAction = new Action("Rename", (e) -> {
-            final TreeItem<FileEntity> source = this.determineSourceItem();
-            Optional<String> result = new TextInputDialog(source.getValue().getFilename()) {
-                {
-                    setTitle("Rename");
-                    setContentText("New name: ");
-                }
-            }.showAndWait();
-            result.ifPresent(s -> fileService.renameFile(source.getValue(), s));
-            update();
-        });
-        renameAction.setAccelerator(new KeyCodeCombination(KeyCode.R, KeyCombination.SHORTCUT_DOWN));
-        return renameAction;
+        return new NamingAction("Rename") {
+            {
+                setEventHandler((e) -> {
+                    final TreeItem<FileEntity> source = determineSourceItem();
+                    final FileEntity value = source.getValue();
+                    renameFileDialog.setInitialText(value.getFilename());
+                    final List<String> childrenNames = getChildrenNames(source.getParent(), value.isFile() ? file : directory);
+                    renameFileDialog.reattachValidator(Validator.createPredicateValidator(
+                            (o) -> !childrenNames.contains(o.toString()),
+                            "Already in this directory"));
+                    Optional<String> result = renameFileDialog.showAndWait();
+                    result.ifPresent(s -> {
+                        fileService.renameFile(value, s);
+                        update();
+                    });
+                });
+                setAccelerator(new KeyCodeCombination(KeyCode.R, KeyCombination.SHORTCUT_DOWN));
+            }
+        };
     }
 
     @Bean("openFileAction")
     private Action openFileAction() {
-        final Action openAction = new Action("Open...", (e) -> {
-            System.out.println("Open");
-        });
-        openAction.setAccelerator(new KeyCodeCombination(KeyCode.O, KeyCombination.SHORTCUT_DOWN));
-        return openAction;
+        return new Action("Open...") {
+            {
+                setEventHandler((e) -> {
+                    final TreeItem<FileEntity> source = determineSourceItem();
+                    List<Future<Object>> futures;
+                    try {
+                        futures = fileService.openFile(source.getValue());
+                    } catch (InterruptedException | IOException e1) {
+                        showExceptionDialog(e1);
+                        return;
+                    }
+                    executor.submit(() -> futures.forEach((f) -> {
+                        try {
+                            f.get();
+                        } catch (InterruptedException | ExecutionException e1) {
+                            Platform.runLater(() ->showExceptionDialog(e1));
+                        }
+                    }));
+                });
+                setAccelerator(new KeyCodeCombination(KeyCode.O, KeyCombination.SHORTCUT_DOWN));
+            }
+
+            private void showExceptionDialog(Exception e) {
+                ExceptionDialog dlg;
+                try {
+                    dlg = new ExceptionDialog(e);
+                } catch (Throwable ex) {
+                    ex.printStackTrace();
+                    return;
+                }
+                dlg.setTitle("IOException");
+                dlg.setContentText("Cannot open file");
+                dlg.show();
+            }
+        };
     }
 
     @Bean("downloadFileAction")
@@ -430,20 +484,103 @@ public class MainController implements ApplicationListener<NewSessionEvent> {
             handleSearch(new ActionEvent());
     }
 
-    private static abstract class ContextAction extends Action {
-        public ContextAction(String text) {
+    private static class CustomDialog extends Dialog<String> {
+        private ValidationSupport vs = new ValidationSupport();
+        private TextField textField;
+        private String initialText;
+        List<Validator<Object>> registeredValidators = new ArrayList<>();
+        final Validator<Object> emptyValidator = Validator.createEmptyValidator("Cannot be empty");
+
+        CustomDialog(Window owner, String title, String labelText) {
+            initModality(Modality.APPLICATION_MODAL);
+            initOwner(owner);
+            setTitle(title);
+
+            GridPane grid = new GridPane();
+            grid.setVgap(10);
+            grid.setHgap(10);
+
+            Label label = new Label(labelText);
+            grid.add(label, 0, 0);
+            textField = createTextField("textField");
+            registeredValidators.add(emptyValidator);
+            vs.registerValidator(textField, emptyValidator);
+            grid.add(textField, 1, 0);
+
+            Platform.runLater(() -> textField.requestFocus());
+
+            DecorationPane decorationPane = new DecorationPane();
+            decorationPane.getChildren().add(grid);
+            getDialogPane().setContent(decorationPane);
+
+            final ButtonType ok = new ButtonType("Ok", ButtonBar.ButtonData.OK_DONE);
+            getDialogPane().getButtonTypes().addAll(ButtonType.CANCEL, ok);
+            getDialogPane().lookupButton(ok).disableProperty().bind(vs.invalidProperty());
+
+            setResultConverter(dialogButton -> dialogButton == ok ? textField.getText() : null);
+        }
+
+        String getInitialText() {
+            return initialText;
+        }
+
+        void setInitialText(String initialText) {
+            this.initialText = initialText;
+            setOnShowing((e) -> textField.setText(initialText));
+        }
+
+        void resetValidators() {
+            registeredValidators = Lists.newArrayList(emptyValidator);
+        }
+
+        @SuppressWarnings("unchecked")
+        void reattachValidator(Validator<Object> validator) {
+            final Validator<Object>[] validators = ArrayUtils.add(registeredValidators.toArray(new Validator[0]) ,validator);
+            final Validator<Object> combined = Validator.combine(validators);
+            vs.registerValidator(textField, combined);
+        }
+
+        @SuppressWarnings("unchecked")
+        void addValidator(Validator<Object> validator) {
+            registeredValidators.add(validator);
+            final Validator<Object>[] validators = registeredValidators.toArray(new Validator[0]);
+            final Validator<Object> combined = Validator.combine(validators);
+            vs.registerValidator(textField, combined);
+        }
+
+        private TextField createTextField(String id) {
+            TextField textField = new TextField();
+            textField.setId(id);
+            GridPane.setHgrow(textField, Priority.ALWAYS);
+            return textField;
+        }
+    }
+
+    private static class NamingAction extends Action {
+        Predicate<TreeItem<FileEntity>> file = (f) -> f.getValue().isFile();
+
+        Predicate<TreeItem<FileEntity>> directory = (f) -> f.getValue().isDirectory();
+
+        Predicate<TreeItem<FileEntity>> both = (f) -> true;
+
+        public NamingAction(String text) {
             super(text);
         }
 
-        public ContextAction(Consumer<ActionEvent> eventHandler) {
+        public NamingAction(Consumer<ActionEvent> eventHandler) {
             super(eventHandler);
         }
 
-        public ContextAction(String text, Consumer<ActionEvent> eventHandler) {
+        public NamingAction(String text, Consumer<ActionEvent> eventHandler) {
             super(text, eventHandler);
         }
 
-        abstract boolean isSupported();
+        List<String> getChildrenNames(TreeItem<FileEntity> parent, Predicate<TreeItem<FileEntity>> p) {
+            return parent.getChildren().stream()
+                    .filter(p)
+                    .map((f) -> f.getValue().getFilename())
+                    .collect(Collectors.toList());
+        }
     }
 
     private TreeItem<FileEntity> createNode(final FileEntity f) {

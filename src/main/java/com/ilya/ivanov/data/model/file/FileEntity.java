@@ -3,29 +3,18 @@ package com.ilya.ivanov.data.model.file;
 import org.apache.commons.io.IOUtils;
 import org.apache.log4j.Logger;
 import org.hibernate.annotations.SortNatural;
-import org.jscience.physics.amount.Amount;
-import org.jscience.physics.amount.AmountFormat;
 import org.springframework.beans.factory.annotation.Configurable;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 import javax.annotation.PostConstruct;
-import javax.measure.converter.UnitConverter;
-import javax.measure.quantity.DataAmount;
-import javax.measure.unit.NonSI;
-import javax.measure.unit.SI;
-import javax.measure.unit.Unit;
-import javax.measure.unit.UnitFormat;
 import javax.persistence.*;
 import java.io.*;
 import java.text.DateFormat;
-import java.text.spi.DateFormatProvider;
 import java.util.*;
 import java.util.zip.DataFormatException;
 import java.util.zip.Deflater;
 import java.util.zip.Inflater;
-
-import static javax.measure.unit.SI.*;
 
 /**
  * Created by ilya on 5/19/17.
