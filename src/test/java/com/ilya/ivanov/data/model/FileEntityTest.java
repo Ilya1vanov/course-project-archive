@@ -1,15 +1,12 @@
 package com.ilya.ivanov.data.model;
 
-import com.ilya.ivanov.config.AppConfig;
 import com.ilya.ivanov.config.AspectConfig;
 import com.ilya.ivanov.config.JpaConfig;
+import com.ilya.ivanov.data.model.file.FileEntity;
 import org.fest.assertions.Assertions;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.BeanCreationException;
-import org.springframework.context.annotation.ComponentScan;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.FilterType;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.test.context.support.AnnotationConfigContextLoader;
@@ -49,7 +46,7 @@ public class FileEntityTest {
 
         assertThat(root.getChildren(), notNullValue());
         Assertions.assertThat(root.getChildren()).contains(file);
-        assertThat(file, is(root.getChildren().get(0)));
+        assertThat(file, is(root.getChildren().toArray()[0]));
         assertThat(file.getFileSize(), notNullValue());
     }
 

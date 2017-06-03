@@ -17,7 +17,7 @@ import java.util.Map;
  */
 public class ViewManager {
     /* currently shown view */
-    private View currentViewName;
+    private View currentView;
 
     /* mapping viewName -> Stage */
     private final HashMap<String, View> views = new HashMap<>();
@@ -35,7 +35,7 @@ public class ViewManager {
     }
 
     public View getCurrentView() {
-        return views.get(currentViewName);
+        return currentView;
     }
 
     public void hideAllAndShow(String viewName) throws RuntimeException {
@@ -44,7 +44,7 @@ public class ViewManager {
             throw new RuntimeException("No such view: " + viewName);
         views.values().forEach(view -> view.getView().getScene().getWindow().hide());
         ((Stage)newView.getView().getScene().getWindow()).show();
-        currentViewName = newView;
+        currentView = newView;
     }
 
     private View loadView(String name, String url) {

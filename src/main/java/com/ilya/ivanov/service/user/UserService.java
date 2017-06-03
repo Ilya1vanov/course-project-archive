@@ -1,21 +1,28 @@
-package com.ilya.ivanov.security.registration;
+package com.ilya.ivanov.service.user;
 
-import com.ilya.ivanov.data.model.Role;
-import com.ilya.ivanov.data.model.UserDto;
-import com.ilya.ivanov.data.model.UserEntity;
+import com.ilya.ivanov.data.model.user.Role;
+import com.ilya.ivanov.data.model.user.UserDto;
+import com.ilya.ivanov.data.model.user.UserEntity;
 import com.ilya.ivanov.data.repository.UserRepository;
+import com.ilya.ivanov.security.authentication.AuthenticationService;
+import com.ilya.ivanov.security.registration.CredentialsPolicy;
+import com.ilya.ivanov.security.registration.PasswordGenerator;
+import com.ilya.ivanov.security.registration.PropertiesFileCredentialsPolicy;
+import com.ilya.ivanov.security.registration.RegistrationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
+import java.util.Collection;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
- * Created by ilya on 5/21/17.
+ * Created by ilya on 5/31/17.
  */
 @Component
-public class DefaultRegistrationService implements RegistrationService {
+public class UserService implements RegistrationService, AuthenticationService, AutocompletionService {
     @Value("${com.ilya.ivanov.registration.defaultRole}")
     private Role defaultRole;
 
@@ -28,7 +35,7 @@ public class DefaultRegistrationService implements RegistrationService {
     private PasswordGenerator passwordGenerator;
 
     @Autowired
-    public DefaultRegistrationService(UserRepository userRepository, PasswordEncoder passwordEncoder, CredentialsPolicy credentialsPolicy) {
+    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder, CredentialsPolicy credentialsPolicy) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.credentialsPolicy = credentialsPolicy;
@@ -68,5 +75,23 @@ public class DefaultRegistrationService implements RegistrationService {
 
     public void setPasswordGenerator(PasswordGenerator passwordGenerator) {
         this.passwordGenerator = passwordGenerator;
+    }
+
+    @Override
+    public Optional<UserEntity> authenticate(String email, String password) {
+        UserEntity byEmailAndPassword = userRepository.findByEmail(email);
+        if (byEmailAndPassword != null && passwordEncoder.matches(password, byEmailAndPassword.getPassword()))
+            return Optional.of(byEmailAndPassword);
+        else
+            return Optional.empty();
+    }
+
+    @Override
+    public Collection<String> getAutocompletion(String text) {
+        return userRepository
+                .findByEmailStartsWith(text)
+                .stream()
+                .map(UserEntity::getEmail)
+                .collect(Collectors.toList());
     }
 }

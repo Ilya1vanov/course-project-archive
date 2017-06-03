@@ -1,7 +1,7 @@
 package com.ilya.ivanov.data.constraints.validator;
 
 import com.ilya.ivanov.data.constraints.annotation.PasswordMatches;
-import com.ilya.ivanov.data.model.UserDto;
+import com.ilya.ivanov.data.model.user.UserDto;
 import javax.validation.ConstraintValidator;
 import javax.validation.ConstraintValidatorContext;
 

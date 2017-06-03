@@ -9,7 +9,6 @@
 <?import javafx.scene.control.Pagination?>
 <?import javafx.scene.control.TableColumn?>
 <?import javafx.scene.control.TableView?>
-<?import javafx.scene.control.TextField?>
 <?import javafx.scene.control.TreeTableColumn?>
 <?import javafx.scene.control.TreeTableView?>
 <?import javafx.scene.control.cell.PropertyValueFactory?>
@@ -27,31 +26,25 @@
 <?import javafx.scene.text.Text?>
 <?language javascript?>
 
+<?import impl.org.controlsfx.spreadsheet.TableViewSpanSelectionModel?>
+<?import org.controlsfx.control.textfield.CustomTextField?>
+<?import javafx.scene.control.SelectionMode?>
 <VBox fx:id="root" xmlns="http://javafx.com/javafx/8.0.112" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.ilya.ivanov.controller.MainController">
     <AnchorPane prefHeight="45.0" prefWidth="600.0" VBox.vgrow="NEVER">
-
         <HBox fx:id="controlButtons" alignment="CENTER_LEFT" prefHeight="100.0" prefWidth="460.0" spacing="10.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="150.0" AnchorPane.topAnchor="0.0">
-            <VBox fx:id="addButtonWrapper" alignment="CENTER">
-                <Button fx:id="addButton" onAction="#handleAddFiles" text="Add files" />
-            </VBox>
-            <VBox fx:id="removeButtonWrapper" alignment="CENTER">
-                <Button fx:id="removeButton" onAction="#handleRemove" text="Remove" />
-            </VBox>
-
+            <Button fx:id="addButton" text="Add files" />
+            <Button fx:id="removeButton" text="Remove" />
             <padding>
                 <Insets bottom="5.0" left="20.0" right="5.0" top="5.0" />
             </padding>
         </HBox>
-
         <HBox alignment="CENTER_RIGHT" prefHeight="55.0" prefWidth="200.0" spacing="7.0" AnchorPane.bottomAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
-
             <Pane>
                 <ImageView fitHeight="32" fitWidth="32" onMouseClicked="#handleChangeTheme">
                     <Image url="@/static/pics/palette-icon.png" />
                     <cursor><ImageCursor fx:constant="HAND" /></cursor>
                 </ImageView>
             </Pane>
-
             <StackPane prefHeight="35.0" prefWidth="26.0">
                 <Circle fill="#b1baff" radius="16.0" />
                 <Text fx:id="userNameLetter" fill="#4c18dd" text="G" translateX="-1" translateY="-1">
@@ -59,7 +52,6 @@
                         <Font name="FreeSerif Bold" size="24.0" />
                     </font>
                 </Text>
-
             </StackPane>
             <AnchorPane onMouseClicked="#handleSignOut">
                 <Label layoutX="25.0" layoutY="5.0" text="Sign Out" underline="true" />
@@ -69,7 +61,6 @@
                         <Image url="@/static/pics/sign-out-icon.png" />
                     </ImageView>
                 </Pane>
-
                 <cursor>
                     <Cursor fx:constant="HAND" />
                 </cursor>
@@ -77,46 +68,19 @@
                     <Insets bottom="5.0" top="5.0" />
                 </HBox.margin>
             </AnchorPane>
-
             <padding>
                 <Insets bottom="10.0" right="20.0" top="10.0" />
             </padding>
         </HBox>
-
     </AnchorPane>
-
-    <StackPane alignment="CENTER_RIGHT" VBox.vgrow="NEVER">
-        <TextField fx:id="searchField" onAction="#handleSearch" promptText="Search">
-            <HBox.margin>
-                <Insets bottom="10.0" left="20.0" right="20.0" top="10.0" />
-            </HBox.margin>
-            <padding>
-                <Insets bottom="7.0" left="5.0" right="5.0" top="7.0" />
-            </padding>
-        </TextField>
-        <ImageView fitHeight="20.0" fitWidth="20.0" onMouseClicked="#handleSearchCrossClicked" StackPane.alignment="CENTER_RIGHT">
-            <effect>
-                <InnerShadow choke="1.0" color="#00000045" height="255.0" radius="127.0" width="255.0" />
-            </effect>
-            <StackPane.margin>
-                <Insets right="7.0" />
-            </StackPane.margin>
-            <cursor>
-                <Cursor fx:constant="HAND" />
-            </cursor>
-
-            <Image url="@/static/pics/spritesheet.png" />
-        </ImageView>
-
+    <StackPane fx:id="searchFieldPane" alignment="CENTER_RIGHT" VBox.vgrow="NEVER">
         <padding>
             <Insets bottom="5.0" left="20.0" right="20.0" top="5.0" />
         </padding>
     </StackPane>
-
     <StackPane VBox.vgrow="ALWAYS">
-
-        <VBox fx:id="searchResultsLayout" visible="false">
-            <TableView id="searchTable" fx:id="searchResultTable" VBox.vgrow="ALWAYS">
+        <VBox fx:id="searchLayout" visible="false">
+            <TableView id="searchTable" fx:id="searchTable" VBox.vgrow="ALWAYS">
                 <placeholder>
                     <Text text="Your search did not match any files" />
                 </placeholder>
@@ -126,52 +90,46 @@
                 <columns>
                     <TableColumn minWidth="500.0" prefWidth="550.0" text="Filename">
                         <cellValueFactory>
-                            <PropertyValueFactory property="name" />
-                        </cellValueFactory>
-                    </TableColumn>
-                    <TableColumn maxWidth="550.0" minWidth="300.0" prefWidth="350.0" text="Owner">
-                        <cellValueFactory>
-                            <PropertyValueFactory property="owner" />
+                            <PropertyValueFactory property="filename" />
                         </cellValueFactory>
                     </TableColumn>
                     <TableColumn maxWidth="100.0" minWidth="100.0" prefWidth="100.0" text="Size">
                         <cellValueFactory>
-                            <PropertyValueFactory property="size" />
+                            <PropertyValueFactory property="fileSizeFormat" />
                         </cellValueFactory>
                     </TableColumn>
-                    <TableColumn maxWidth="100.0" minWidth="100.0" prefWidth="100.0" text="Uploaded">
+                    <TableColumn maxWidth="200.0" minWidth="175.0" prefWidth="175.0" text="Modified">
                         <cellValueFactory>
-                            <PropertyValueFactory property="uploaded" />
+                            <PropertyValueFactory property="lastModifiedFormat" />
                         </cellValueFactory>
                     </TableColumn>
                 </columns>
             </TableView>
             <AnchorPane fx:id="searchStatusBar">
-                <Pagination fx:id="searchPagination" pageCount="5" prefHeight="45.0" translateX="-80.0" AnchorPane.leftAnchor="160.0" AnchorPane.rightAnchor="0.0" />
-                <Text fx:id="searchResultText" layoutX="10.0" layoutY="27.94921875" AnchorPane.leftAnchor="10.0">Results on this page
-                </Text>
+                <Pagination fx:id="searchPagination" pageCount="1" prefHeight="45.0" translateX="-80.0" AnchorPane.leftAnchor="160.0" AnchorPane.rightAnchor="0.0" />
+                <Text layoutX="10.0" layoutY="28.0" AnchorPane.leftAnchor="10.0" text="Results on this page:"/>
+                <Text fx:id="searchResultText" layoutX="20.0" layoutY="29.0" AnchorPane.leftAnchor="147.">11</Text>
             </AnchorPane>
         </VBox>
-
         <VBox fx:id="workingTreeLayout" VBox.vgrow="ALWAYS">
-            <TreeTableView id="workingTreeTable" fx:id="workingTreeTable" VBox.vgrow="ALWAYS">
+            <TreeTableView id="workingTreeTable" fx:id="workingTreeTable" VBox.vgrow="ALWAYS" showRoot="false">
                 <columnResizePolicy>
                     <TreeTableView fx:constant="CONSTRAINED_RESIZE_POLICY" />
                 </columnResizePolicy>
                 <columns>
                     <TreeTableColumn minWidth="500.0" prefWidth="550.0" text="Filename">
                         <cellValueFactory>
-                            <TreeItemPropertyValueFactory property="name" />
+                            <TreeItemPropertyValueFactory property="filename" />
                         </cellValueFactory>
                     </TreeTableColumn>
                     <TreeTableColumn maxWidth="100.0" minWidth="100.0" prefWidth="100.0" text="Size">
                         <cellValueFactory>
-                            <TreeItemPropertyValueFactory property="size" />
+                            <TreeItemPropertyValueFactory property="fileSizeFormat" />
                         </cellValueFactory>
                     </TreeTableColumn>
-                    <TreeTableColumn maxWidth="100.0" minWidth="100.0" prefWidth="100.0" text="Modified">
+                    <TreeTableColumn maxWidth="200.0" minWidth="175.0" prefWidth="175.0" text="Modified">
                         <cellValueFactory>
-                            <TreeItemPropertyValueFactory property="uploaded" />
+                            <TreeItemPropertyValueFactory property="lastModifiedFormat" />
                         </cellValueFactory>
                     </TreeTableColumn>
                 </columns>
@@ -181,11 +139,8 @@
                     <Insets bottom="5.0" left="20.0" right="20.0" top="5.0" />
                 </VBox.margin>
             </Label>
-
         </VBox>
-
     </StackPane>
-
     <stylesheets>
         <URL value="@/static/css/mainStage.css" />
     </stylesheets>

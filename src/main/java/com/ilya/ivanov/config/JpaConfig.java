@@ -62,6 +62,7 @@ public class JpaConfig {
         jpaProperties.setProperty("hibernate.max_fetch_depth", env.getProperty("db.max_fetch_depth"));
         jpaProperties.setProperty("hibernate.jdbc.fetch_size", env.getProperty("db.jdbc.fetch_size"));
         jpaProperties.setProperty("hibernate.jdbc.batch_size", env.getProperty("db.jdbc.batch_size"));
+        jpaProperties.setProperty("hibernate.enable_lazy_load_no_trans", "true");
 
         emFactory.setJpaProperties(jpaProperties);
 

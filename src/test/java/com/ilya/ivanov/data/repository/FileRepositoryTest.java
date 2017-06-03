@@ -1,10 +1,8 @@
 package com.ilya.ivanov.data.repository;
 
-import com.ilya.ivanov.config.AppConfig;
 import com.ilya.ivanov.config.JpaConfig;
-import com.ilya.ivanov.data.model.FileEntity;
+import com.ilya.ivanov.data.model.file.FileEntity;
 import org.fest.assertions.Assertions;
-import org.fest.assertions.Condition;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -19,7 +17,6 @@ import org.springframework.test.context.support.DirtiesContextTestExecutionListe
 import org.springframework.test.context.transaction.TransactionalTestExecutionListener;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.io.IOException;
 import java.util.List;
 
 import static org.hamcrest.CoreMatchers.is;

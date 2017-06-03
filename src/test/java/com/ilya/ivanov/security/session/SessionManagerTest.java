@@ -1,6 +1,6 @@
 package com.ilya.ivanov.security.session;
 
-import com.ilya.ivanov.data.model.UserEntity;
+import com.ilya.ivanov.data.model.user.UserEntity;
 import org.junit.Test;
 
 import static org.junit.Assert.*;

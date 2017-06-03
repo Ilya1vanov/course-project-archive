@@ -1,18 +1,26 @@
 package com.ilya.ivanov.security.session;
 
-import com.ilya.ivanov.data.model.UserEntity;
+import com.ilya.ivanov.data.model.user.UserEntity;
+import org.springframework.beans.BeansException;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.ApplicationContextAware;
 import org.springframework.stereotype.Component;
 
 /**
  * Created by ilya on 5/21/17.
  */
 @Component
-public class SessionManager {
+public class SessionManager implements ApplicationContextAware {
     private Session session;
 
+    private ApplicationContext context;
+
     public Session newSession(UserEntity userEntity) {
-        invalidateSession();
-        return new Session(userEntity);
+        if (hasValidSession())
+            invalidateSession();
+        final Session session = new Session(userEntity);
+        context.publishEvent(new NewSessionEvent(session));
+        return session;
     }
 
     public void invalidateSession() {
@@ -21,7 +29,7 @@ public class SessionManager {
     }
 
     public Session getSession() {
-        if (session != null && session.isValid())
+        if (hasValidSession())
             return session;
         else
             throw new IllegalStateException("Invalid session");
@@ -29,5 +37,10 @@ public class SessionManager {
 
     public boolean hasValidSession() {
         return session != null && session.isValid();
+    }
+
+    @Override
+    public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
+        this.context = applicationContext;
     }
 }

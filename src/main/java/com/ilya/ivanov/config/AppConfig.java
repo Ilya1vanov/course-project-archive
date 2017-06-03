@@ -1,21 +1,15 @@
 package com.ilya.ivanov.config;
 
-import com.ilya.ivanov.ArchiveApplication;
-import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.*;
-import org.springframework.context.annotation.aspectj.EnableSpringConfigured;
 import org.springframework.context.support.PropertySourcesPlaceholderConfigurer;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
-
-import static org.springframework.context.annotation.ComponentScan.Filter;
 
 /**
  * Created by ilya on 5/19/17.
  */
 @Configuration
-@PropertySource("classpath:application.properties")
-@PropertySource("classpath:application-${spring.profiles.active}.properties")
+@PropertySource("classpath:application.yaml")
+@EnableConfigurationProperties
 public class AppConfig {
     /**
      * {@link PropertySourcesPlaceholderConfigurer} have to define as static

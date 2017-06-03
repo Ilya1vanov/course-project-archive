@@ -1,14 +1,10 @@
-package com.ilya.ivanov.data.model;
+package com.ilya.ivanov.data.model.user;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Configurable;
-import org.springframework.context.annotation.DependsOn;
+import com.ilya.ivanov.data.model.file.FileEntity;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.context.annotation.Scope;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
 import javax.persistence.*;
 
 /**
@@ -27,7 +23,7 @@ public class UserEntity {
     @Column(name = "user_id")
     private Long id;
 
-    @Column(name = "email")
+    @Column(name = "email", unique = true)
     private String email;
 
     @Column(name = "password")

@@ -1,10 +1,10 @@
 package com.ilya.ivanov.controller;
 
-import com.ilya.ivanov.security.authentication.AuthenticationService;
-import com.ilya.ivanov.security.registration.RegistrationService;
-import com.ilya.ivanov.data.model.UserDto;
-import com.ilya.ivanov.data.model.UserEntity;
+import com.ilya.ivanov.data.model.user.UserDto;
+import com.ilya.ivanov.data.model.user.UserEntity;
+import com.ilya.ivanov.security.session.NewSessionEvent;
 import com.ilya.ivanov.security.session.SessionManager;
+import com.ilya.ivanov.service.user.UserService;
 import com.ilya.ivanov.view.ViewManager;
 import javafx.beans.binding.Bindings;
 import javafx.beans.binding.BooleanBinding;
@@ -13,11 +13,9 @@ import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.GridPane;
 import javafx.scene.text.Text;
-import org.hibernate.validator.internal.engine.ConstraintViolationImpl;
-import org.hibernate.validator.internal.engine.constraintvalidation.ConstraintValidatorContextImpl;
+import org.controlsfx.control.textfield.TextFields;
 import org.springframework.beans.factory.annotation.Autowired;
-
-import javax.validation.ConstraintValidatorContext;
+import org.springframework.context.ApplicationListener;
 import javax.validation.ConstraintViolation;
 import javax.validation.Validator;
 import java.util.Optional;
@@ -26,7 +24,7 @@ import java.util.Set;
 /**
  * Created by ilya on 5/20/17.
  */
-public class LoginController {
+public class LoginController implements ApplicationListener<NewSessionEvent> {
     public GridPane loginPane;
     public TextField emailField;
     public Text warningText;
@@ -38,9 +36,7 @@ public class LoginController {
 
     @Autowired private ViewManager viewManager;
 
-    @Autowired private AuthenticationService authenticationService;
-
-    @Autowired private RegistrationService registrationService;
+    @Autowired private UserService userService;
 
     @Autowired private Validator validator;
 
@@ -50,25 +46,24 @@ public class LoginController {
         BooleanBinding or = Bindings.or(emailField.textProperty().isEmpty(), passwordField.textProperty().isEmpty());
         signUpBtn.disableProperty().bind(Bindings.or(or, confirmPasswordField.textProperty().isEmpty()));
         signInBtn.disableProperty().bind(or);
+        loginPane.visibleProperty().bind(registrationPane.visibleProperty().not());
+        TextFields.bindAutoCompletion(emailField, param -> userService.getAutocompletion(param.getUserText()));
     }
 
     public void handleRegistrationSwitch() {
-        loginPane.setVisible(false);
         registrationPane.setVisible(true);
     }
 
     public void handleLoginSwitch() {
-        registrationPane.setVisible(false);
         loginPane.setVisible(true);
     }
 
     public void handleSignUp() throws Exception {
-        UserDto userDto =
-                new UserDto(emailField.getText(), passwordField.getText(), confirmPasswordField.getText());
+        UserDto userDto = getDto();
         Set<ConstraintViolation<UserDto>> violations = validator.validate(userDto);
         boolean rejectedEmail = false;
         if (violations.isEmpty()) {
-            Optional<UserEntity> register = registrationService.register(userDto);
+            Optional<UserEntity> register = userService.register(userDto);
             if (register.isPresent()) {
                 handleSignIn();
                 return;
@@ -84,14 +79,17 @@ public class LoginController {
         }
     }
 
+    private UserDto getDto() {
+        return new UserDto(emailField.getText(), passwordField.getText(), confirmPasswordField.getText());
+    }
+
     public void handleSignIn() {
         String email = emailField.getText();
         String password = passwordField.getText();
-        Optional<UserEntity> authentication = authenticationService.authenticate(email, password);
+        Optional<UserEntity> authentication = userService.authenticate(email, password);
         if (authentication.isPresent()) {
             UserEntity userEntity = authentication.get();
             sessionManager.newSession(userEntity);
-            this.clearFields();
             viewManager.hideAllAndShow("mainView");
         }
         else {
@@ -101,13 +99,19 @@ public class LoginController {
         }
     }
 
+    public void handleFieldChanged() {
+        warningText.setVisible(false);
+    }
+
+    @Override
+    public void onApplicationEvent(NewSessionEvent newSessionEvent) {
+        this.clearFields();
+        passwordField.requestFocus();
+    }
+
     private void clearFields() {
         emailField.setText("");
         passwordField.setText("");
         confirmPasswordField.setText("");
-    }
-
-    public void handleFieldChanged() {
-        warningText.setVisible(false);
     }
 }

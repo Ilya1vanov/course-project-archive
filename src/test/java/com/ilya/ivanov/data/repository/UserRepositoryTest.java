@@ -1,15 +1,13 @@
 package com.ilya.ivanov.data.repository;
 
-import com.ilya.ivanov.config.AppConfig;
 import com.ilya.ivanov.config.JpaConfig;
-import com.ilya.ivanov.data.model.Role;
-import com.ilya.ivanov.data.model.UserEntity;
+import com.ilya.ivanov.data.model.user.Role;
+import com.ilya.ivanov.data.model.user.UserEntity;
 import org.fest.assertions.Assertions;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.domain.Example;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;

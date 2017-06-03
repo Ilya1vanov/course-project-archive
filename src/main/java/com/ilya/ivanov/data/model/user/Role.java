@@ -1,4 +1,4 @@
-package com.ilya.ivanov.data.model;
+package com.ilya.ivanov.data.model.user;
 
 /**
  * Created by ilya on 5/18/17.

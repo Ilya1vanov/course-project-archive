@@ -1,9 +1,11 @@
-package com.ilya.ivanov.security.registration;
+package com.ilya.ivanov.service.user;
 
 import com.ilya.ivanov.config.AppConfig;
-import com.ilya.ivanov.data.model.UserDto;
-import com.ilya.ivanov.data.model.UserEntity;
+import com.ilya.ivanov.data.model.user.UserDto;
+import com.ilya.ivanov.data.model.user.UserEntity;
 import com.ilya.ivanov.data.repository.UserRepository;
+import com.ilya.ivanov.security.registration.CredentialsPolicy;
+import com.ilya.ivanov.security.registration.RegistrationService;
 import org.junit.Before;
 import org.junit.Test;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -23,7 +25,7 @@ import static org.mockito.Mockito.when;
  */
 @ActiveProfiles("dev")
 @ContextConfiguration(loader = AnnotationConfigContextLoader.class, classes = {AppConfig.class})
-public class DefaultRegistrationServiceTest {
+public class RegistrationServiceTest {
     private final UserRepository userRepository = mock(UserRepository.class);
 
     private final PasswordEncoder passwordEncoder = mock(PasswordEncoder.class);
@@ -38,11 +40,11 @@ public class DefaultRegistrationServiceTest {
 
     private final UserEntity userEntity = new UserEntity(email, password);
 
-    private DefaultRegistrationService SUT;
+    private RegistrationService SUT;
 
     @Before
     public void setUp() throws Exception {
-        SUT = new DefaultRegistrationService(userRepository, passwordEncoder, credentialsPolicy);
+        SUT = new UserService(userRepository, passwordEncoder, credentialsPolicy);
         when(credentialsPolicy.alwaysGenerateOnRegistration()).thenReturn(false);
         when(passwordEncoder.encode(password)).thenReturn(password);
     }

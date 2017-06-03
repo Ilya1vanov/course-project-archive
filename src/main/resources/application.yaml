@@ -1,0 +1,82 @@
+spring:
+  profiles:
+    active: prod
+  jpa:
+    show-sql: true
+    generate-ddl: true
+  jmx:
+    enabled: false
+  mail:
+    properties.mail.smtp:
+      connecttimeout: 5000
+      timeout: 3000
+      writetimeout: 5000
+    test-connection: true
+    host: smtp.gmail.com
+    port: 587
+    username: com.ilya.ivanov@gmail.com
+    password: Ivanov123
+logging:
+  file: logs/archive.log
+ui:
+  test: test, te, st
+  views:
+    login:
+      title: Welcome!
+      minHeight: 225.0
+      minWidth: 350.0
+      resizable: false
+    main:
+      title: Catty
+      minHeight: 600.0
+      minWidth: 800.0
+      resizable: true
+  search.pageSize: 30
+com:
+  ilya:
+    ivanov:
+      registration:
+        defaultRole: USER
+      credential:
+        alwaysGenerateOnRegistration: false
+        defaultPasswordGeneratorName: com.ilya.ivanov.security.registration.RandomPasswordGenerator
+---
+spring:
+  profiles: dev
+  jpa:
+    hibernate:
+      ddl-auto: create
+    database: H2
+  datasource:
+    url: jdbc:h2:file:/tmp/archive_db;DB_CLOSE_ON_EXIT=FALSE;AUTO_SERVER=TRUE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+logging:
+  level:
+    org.hibernate: info
+    javafx.*: info
+    org.springframework: info
+    org.jboss.logging: info
+    org.apache.commons: info
+    .: debug
+---
+spring:
+  profiles: prod
+  jpa:
+      hibernate:
+        ddl-auto: create
+      database: MYSQL
+  datasource:
+    url: jdbc:mysql://localhost:3306/archive
+    driver-class-name: com.mysql.jdbc.Driver
+    username: root
+    password: root
+logging:
+  level:
+    org.hibernate: warn
+    javafx.*: warn
+    org.springframework: warn
+    org.jboss.logging: warn
+    org.apache.commons: warn
+    .: info

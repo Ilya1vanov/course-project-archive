@@ -1,4 +1,4 @@
-package com.ilya.ivanov.data.model;
+package com.ilya.ivanov.data.model.user;
 
 import com.ilya.ivanov.data.constraints.annotation.PasswordMatches;
 import com.ilya.ivanov.data.constraints.annotation.ValidEmail;

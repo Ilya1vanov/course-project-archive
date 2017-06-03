@@ -1,7 +1,7 @@
 package com.ilya.ivanov.security.registration;
 
-import com.ilya.ivanov.data.model.UserDto;
-import com.ilya.ivanov.data.model.UserEntity;
+import com.ilya.ivanov.data.model.user.UserDto;
+import com.ilya.ivanov.data.model.user.UserEntity;
 
 import java.util.Optional;
 
