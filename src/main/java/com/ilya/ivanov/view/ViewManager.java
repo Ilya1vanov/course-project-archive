@@ -30,8 +30,8 @@ public class ViewManager {
         views.put(name, loadView(name, path));
     }
 
-    public View getView(String stageName) {
-        return views.get(stageName);
+    public View getView(String viewName) {
+        return views.get(viewName);
     }
 
     public View getCurrentView() {

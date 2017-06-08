@@ -29,10 +29,7 @@ public class SessionManager implements ApplicationContextAware {
     }
 
     public Session getSession() {
-        if (hasValidSession())
-            return session;
-        else
-            throw new IllegalStateException("Invalid session");
+        return session;
     }
 
     public boolean hasValidSession() {

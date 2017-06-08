@@ -37,7 +37,7 @@ public class AuthenticationServiceTest {
 
     @Before
     public void setUp() throws Exception {
-        SUT = new UserService(userRepository, passwordEncoder, credentialsPolicy);
+        SUT = new DefaultUserService(userRepository, passwordEncoder, credentialsPolicy);
     }
 
     @Test

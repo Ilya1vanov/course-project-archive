@@ -44,7 +44,7 @@ public class RegistrationServiceTest {
 
     @Before
     public void setUp() throws Exception {
-        SUT = new UserService(userRepository, passwordEncoder, credentialsPolicy);
+        SUT = new DefaultUserService(userRepository, passwordEncoder, credentialsPolicy);
         when(credentialsPolicy.alwaysGenerateOnRegistration()).thenReturn(false);
         when(passwordEncoder.encode(password)).thenReturn(password);
     }

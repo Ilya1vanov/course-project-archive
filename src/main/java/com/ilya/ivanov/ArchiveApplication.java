@@ -1,5 +1,6 @@
 package com.ilya.ivanov;
 
+import com.ilya.ivanov.aspect.ActivityTrackingAspect;
 import com.ilya.ivanov.controller.MainController;
 import com.ilya.ivanov.data.model.file.FileEntity;
 import com.ilya.ivanov.data.model.user.Role;
@@ -11,7 +12,6 @@ import com.ilya.ivanov.view.ViewManager;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
-import org.apache.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -20,23 +20,23 @@ import org.springframework.context.annotation.ImportResource;
 import org.springframework.context.annotation.Profile;
 import org.springframework.core.env.Environment;
 import org.springframework.data.domain.Example;
+import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
-import javax.validation.Validator;
-import java.io.IOException;
+
 import java.util.Objects;
 
 @SpringBootApplication
 @Component
 @ImportResource({"classpath:gui-context.xml", "classpath:aspect-context.xml", "classpath:stylesheets-context.xml"})
 public class ArchiveApplication extends AbstractJavaFxApplicationSupport {
-	private static final Logger log = Logger.getLogger(ArchiveApplication.class);
+    private ViewManager viewManager;
 
-    @Autowired private ViewManager viewManager;
+    private SessionManager sessionManager;
 
-    @Autowired private SessionManager sessionManager;
+    private Environment env;
 
-    @Autowired private Environment env;
+    private ActivityTrackingAspect aspect;
 
     public static void main(String[] args) {
         launchApp(ArchiveApplication.class, args);
@@ -63,12 +63,17 @@ public class ArchiveApplication extends AbstractJavaFxApplicationSupport {
 
         ((MainController)viewManager.getView("mainView").getController()).initAfterDI();
         viewManager.hideAllAndShow("loginView");
-        mainStage.setOnCloseRequest((e) -> sessionManager.invalidateSession());
+        mainStage.setOnCloseRequest((e) -> {
+            if (sessionManager.hasValidSession()) {
+                sessionManager.invalidateSession();
+//                aspect.sendActivityReport();
+            }
+        });
     }
 
 	@Bean
     @Profile("dev")
-    public CommandLineRunner development(UserRepository repository, PasswordEncoder encoder, Validator validator) {
+    public CommandLineRunner development(UserRepository repository, PasswordEncoder encoder, JavaMailSender javaMailSender) {
 	    return (args) -> {
             addAdmin(repository, encoder);
         };
@@ -80,15 +85,31 @@ public class ArchiveApplication extends AbstractJavaFxApplicationSupport {
         return (args) -> addAdmin(repository, encoder);
     }
 
-    private void addAdmin(UserRepository repository, PasswordEncoder encoder) throws IOException {
+    private UserEntity addAdmin(UserRepository repository, PasswordEncoder encoder) throws Exception {
         String password = encoder.encode("ilya");
         UserEntity admin = new UserEntity("com.ilya.ivanov@gmail.com", password, Role.ADMIN);
-        admin.getRoot().createDirectory(null, "dir2");
-        final FileEntity dir1 = admin.getRoot().createDirectory(null, "dir1");
-        for (int i = 0; i < 40; i++) {
-            dir1.createFile("file-" + i, new byte[]{'1', '2', '.', '0', '1'});
-        }
+        admin.getRoot().createDirectory(null, "Directory 1");
+//        final FileEntity dir1 = admin.getRoot().createDirectory(null, "dir1");
+//        for (int i = 0; i < 40; i++) {
+//            dir1.createFile("file-" + i + ".txt", new byte[]{'1', '2', '.', '0', '1'});
+//        }
         if (!repository.exists(Example.of(new UserEntity(admin.getEmail(), null, null, null))))
             repository.save(admin);
+        return admin;
+    }
+
+    @Autowired
+    public void setViewManager(ViewManager viewManager) {
+        this.viewManager = viewManager;
+    }
+
+    @Autowired
+    public void setSessionManager(SessionManager sessionManager) {
+        this.sessionManager = sessionManager;
+    }
+
+    @Autowired
+    public void setEnv(Environment env) {
+        this.env = env;
     }
 }

@@ -1,5 +1,6 @@
 package com.ilya.ivanov.data.model.file;
 
+import com.google.common.collect.Lists;
 import org.apache.commons.io.IOUtils;
 import org.apache.log4j.Logger;
 import org.hibernate.annotations.SortNatural;
@@ -10,6 +11,7 @@ import org.springframework.stereotype.Component;
 import javax.annotation.PostConstruct;
 import javax.persistence.*;
 import java.io.*;
+import java.net.URI;
 import java.text.DateFormat;
 import java.util.*;
 import java.util.zip.DataFormatException;
@@ -137,7 +139,7 @@ public class FileEntity implements Comparable<FileEntity> {
 
         if (parent != null) {
             assert parent.isDirectory() : "Parent entity is not a directory";
-            assert Arrays.asList(parent.children.toArray()).contains(this) : "Parent doesn't contain this as children";
+            assert Lists.newArrayList(parent.children).contains(this) : "Parent doesn't contain this as children";
         }
         if (isFile()) {
             assert file != null;
@@ -155,8 +157,21 @@ public class FileEntity implements Comparable<FileEntity> {
         return id;
     }
 
+    public String getPath() {
+        return pathTraversal(this).substring(5);
+    }
+
+    private static String pathTraversal(FileEntity fileEntity) {
+        if (fileEntity == null) return "";
+        else return pathTraversal(fileEntity.getParent()) + "/" + fileEntity.getFilename();
+    }
+
     public FileEntity getParent() {
         return parent;
+    }
+
+    public void resetParent() {
+        this.setParent(null);
     }
 
     public void setParent(FileEntity parent) {
@@ -186,6 +201,7 @@ public class FileEntity implements Comparable<FileEntity> {
         checkDirectory();
         if (this.children.contains(child)) {
             this.children.remove(child);
+            child.parent = null;
             recalculateFileSize(this, -child.fileSize);
         }
         checkRep();
@@ -202,12 +218,18 @@ public class FileEntity implements Comparable<FileEntity> {
         children.forEach(this::addChild);
     }
 
+    public void removeChildren(Collection<FileEntity> children) {
+        children.forEach(this::removeChild);
+    }
+
     public String getFilename() {
         return filename;
     }
 
     public void setFilename(String filename) {
         this.filename = filename;
+        if (this.isFile())
+            this.touch();
         checkRep();
     }
 
@@ -303,14 +325,13 @@ public class FileEntity implements Comparable<FileEntity> {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         FileEntity that = (FileEntity) o;
-        return (id != null ? id.equals(that.id) : that.id == null) && (filename != null ? filename.equals(that.filename) : that.filename == null) && (fileSize != null ? fileSize.equals(that.fileSize) : that.fileSize == null);
+        return (id != null ? id.equals(that.id) : that.id == null) && (filename != null ? filename.equals(that.filename) : that.filename == null);
     }
 
     @Override
     public int hashCode() {
         int result = id != null ? id.hashCode() : 0;
         result = 31 * result + (filename != null ? filename.hashCode() : 0);
-        result = 31 * result + (fileSize != null ? fileSize.hashCode() : 0);
         return result;
     }
 

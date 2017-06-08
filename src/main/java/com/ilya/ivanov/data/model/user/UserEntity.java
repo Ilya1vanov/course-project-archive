@@ -1,6 +1,7 @@
 package com.ilya.ivanov.data.model.user;
 
 import com.ilya.ivanov.data.model.file.FileEntity;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
@@ -16,7 +17,8 @@ import javax.persistence.*;
 @Lazy
 @Scope("prototype")
 public class UserEntity {
-    private static final Role DEFAULT = Role.USER;
+    @Value("${com.ilya.ivanov.registration.defaultRole}")
+    private static Role defaultRole;
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -41,7 +43,7 @@ public class UserEntity {
     }
 
     public UserEntity(String email, String password) {
-        this(email, password, DEFAULT);
+        this(email, password, defaultRole);
     }
 
     public UserEntity(String email, String password, Role role) {
@@ -115,9 +117,7 @@ public class UserEntity {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-
         UserEntity that = (UserEntity) o;
-
         return id != null ? id.equals(that.id) : that.id == null;
     }
 

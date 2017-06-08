@@ -3,6 +3,8 @@ package com.ilya.ivanov.service.search;
 import com.google.common.collect.Lists;
 import com.ilya.ivanov.data.model.file.FileEntity;
 import com.ilya.ivanov.data.repository.FileRepository;
+import javafx.beans.property.IntegerProperty;
+import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,7 +13,10 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Slice;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Created by ilya on 5/31/17.
@@ -19,6 +24,8 @@ import java.util.List;
 @Component
 public class SearchService {
     private final FileRepository fileRepository;
+
+    private Set<String> queries = new HashSet<>();
 
     @Value("${ui.search.pageSize}")
     private Integer pageSize;
@@ -29,7 +36,7 @@ public class SearchService {
 
     private long count;
 
-    private StringProperty currentNumberOfElements = new SimpleStringProperty(this, "currentNumberOfElements");
+    private IntegerProperty currentNumberOfElements = new SimpleIntegerProperty(this, "currentNumberOfElements");
 
     @Autowired
     public SearchService(FileRepository fileRepository) {
@@ -39,8 +46,13 @@ public class SearchService {
     public List<FileEntity> startNewSearch(String query) {
         count = fileRepository.countByFilenameContaining(query);
         slices = new Slice[(int)count];
+        this.queries.add(query);
         this.query = query;
         return getSlice(0);
+    }
+
+    public Set<String> getQueries() {
+        return queries;
     }
 
     public List<FileEntity> getSlice(int page) {
@@ -61,16 +73,16 @@ public class SearchService {
         return (int) count / pageSize + (count % pageSize == 0 ? 0 : 1);
     }
 
-    public String getCurrentNumberOfElements() {
+    public Integer getCurrentNumberOfElements() {
         return currentNumberOfElements.get();
     }
 
-    public StringProperty currentNumberOfElementsProperty() {
+    public IntegerProperty currentNumberOfElementsProperty() {
         return currentNumberOfElements;
     }
 
     private void setCurrentResultsNumber(int index) {
         final int numberOfElements = slices[index].getNumberOfElements();
-        this.currentNumberOfElements.set(Integer.toString(numberOfElements));
+        this.currentNumberOfElements.set(numberOfElements);
     }
 }

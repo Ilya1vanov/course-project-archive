@@ -144,11 +144,6 @@
                     </TreeTableColumn>
                 </columns>
             </TreeTableView>
-            <Label fx:id="workingStatusBar">
-                <VBox.margin>
-                    <Insets bottom="5.0" left="20.0" right="20.0" top="5.0" />
-                </VBox.margin>
-            </Label>
         </VBox>
     </StackPane>
     <stylesheets>

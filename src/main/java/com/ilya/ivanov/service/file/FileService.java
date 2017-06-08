@@ -1,28 +1,28 @@
 package com.ilya.ivanov.service.file;
 
 import com.ilya.ivanov.data.model.file.FileEntity;
+import com.ilya.ivanov.security.session.InvalidateSessionEvent;
+import com.ilya.ivanov.security.session.NewSessionEvent;
+import javafx.concurrent.Task;
+import org.springframework.context.ApplicationListener;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
-import java.util.concurrent.Future;
 
 /**
  * Created by ilya on 6/3/17.
  */
-public interface FileService {
-    FileEntity renameFile(FileEntity fileEntity, String filename);
+public interface FileService extends ApplicationListener<InvalidateSessionEvent> {
+    Task<FileEntity> renameFile(FileEntity fileEntity, String filename);
 
-    void removeFilesById(List<Long> ids);
+    Task<Collection<FileEntity>> removeFiles(Collection<FileEntity> files);
 
-    void removeFiles(List<FileEntity> files);
+    Task<Collection<FileEntity>> addDirectory(FileEntity parent, String filename);
 
-    Collection<FileEntity> addDirectory(FileEntity parent, String filename);
+    Task<Collection<FileEntity>> addFiles(FileEntity parent, List<File> source);
 
-    Collection<FileEntity> addFiles(FileEntity parent, List<File> source);
+    Task<Void> openFile(FileEntity fileEntity);
 
-    List<Future<Object>> openFile(FileEntity fileEntity) throws IOException, InterruptedException;
-
-    Collection<File> downloadFiles(File parent, List<FileEntity> files);
+    Task<Collection<File>> downloadFiles(DownloadContext context, List<FileEntity> files);
 }

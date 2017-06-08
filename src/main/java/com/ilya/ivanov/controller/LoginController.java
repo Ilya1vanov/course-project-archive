@@ -55,7 +55,7 @@ public class LoginController implements ApplicationListener<NewSessionEvent> {
     }
 
     public void handleLoginSwitch() {
-        loginPane.setVisible(true);
+        registrationPane.setVisible(false);
     }
 
     public void handleSignUp() throws Exception {

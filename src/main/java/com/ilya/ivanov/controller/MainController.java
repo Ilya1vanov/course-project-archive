@@ -7,7 +7,9 @@ import com.ilya.ivanov.data.model.user.UserEntity;
 import com.ilya.ivanov.security.session.NewSessionEvent;
 import com.ilya.ivanov.security.session.Session;
 import com.ilya.ivanov.security.session.SessionManager;
+import com.ilya.ivanov.service.file.DownloadContext;
 import com.ilya.ivanov.service.file.FileService;
+import com.ilya.ivanov.service.file.SimpleDownloadContext;
 import com.ilya.ivanov.service.search.SearchService;
 import com.ilya.ivanov.view.CSSDriver;
 import com.ilya.ivanov.view.ViewManager;
@@ -17,17 +19,24 @@ import javafx.beans.binding.Bindings;
 import javafx.beans.binding.BooleanBinding;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.concurrent.Task;
+import javafx.concurrent.Worker;
+import javafx.concurrent.WorkerStateEvent;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.geometry.Insets;
 import javafx.scene.control.*;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.scene.input.*;
 import javafx.scene.layout.*;
 import javafx.scene.text.Text;
+import javafx.stage.DirectoryChooser;
 import javafx.stage.FileChooser;
 import javafx.stage.Modality;
 import javafx.stage.Window;
 import org.apache.commons.lang3.ArrayUtils;
+import org.controlsfx.control.StatusBar;
 import org.controlsfx.control.action.Action;
 import org.controlsfx.control.action.ActionUtils;
 import org.controlsfx.control.textfield.TextFields;
@@ -40,18 +49,18 @@ import org.springframework.context.annotation.Bean;
 
 import javax.annotation.PostConstruct;
 import java.io.File;
-import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import java.util.zip.DataFormatException;
+
+import static javafx.concurrent.Worker.State;
 
 /**
+ * Main stage controller
  * Created by ilya on 5/20/17.
  */
 public class MainController implements ApplicationListener<NewSessionEvent> {
@@ -63,7 +72,7 @@ public class MainController implements ApplicationListener<NewSessionEvent> {
     @FXML private TextField searchField;
     @FXML private VBox workingTreeLayout;
     @FXML private TreeTableView<FileEntity> workingTreeTable;
-    @FXML private Label workingStatusBar;
+    @FXML private StatusBar workingStatusBar;
     @FXML private VBox searchLayout;
     @FXML private TableView<FileEntity> searchTable;
     @FXML private Text searchResultText;
@@ -71,14 +80,12 @@ public class MainController implements ApplicationListener<NewSessionEvent> {
 
     private Action removeFilesAction;
     private Action addFilesAction;
-    private Action addDirectoryAction;
-    private Action renameFileAction;
+    private DialogAction<String, NamingDialog> addDirectoryAction;
+    private DialogAction<String, NamingDialog> renameFileAction;
     private Action openFileAction;
-    private Action downloadFileAction;
+    private DialogAction<? extends DownloadContext, DownloadingDialog> downloadFileAction;
 
     private Alert removeConfirmation;
-    private CustomDialog addDirectoryDialog;
-    private CustomDialog renameFileDialog;
     private ContextMenu mainTableMenu;
 
     private SessionManager sessionManager;
@@ -87,20 +94,19 @@ public class MainController implements ApplicationListener<NewSessionEvent> {
     private SearchService searchService;
     private CSSDriver cssDriver;
 
-    private final ExecutorService executor = Executors.newWorkStealingPool();
-
     /** JavaFX initialize */
     public void initialize() {
+        root.addEventHandler(KeyEvent.KEY_TYPED, event -> {
+            if (event.getCode().equals(KeyCode.F5)) {
+                event.consume();
+                refresh();
+            }
+        });
+        Platform.runLater(this::initializeWorkingLayout);
     }
 
     @PostConstruct
     private void initializePostConstruct() {
-        root.addEventHandler(KeyEvent.ANY, event -> {
-            if (event.getCode().equals(KeyCode.F5)) {
-                event.consume();
-                update();
-            }
-        });
         this.initializeActions();
     }
 
@@ -122,7 +128,6 @@ public class MainController implements ApplicationListener<NewSessionEvent> {
 
     public void initAfterDI() {
         this.checkDependencies();
-        this.initializeWorkingLayout();
         this.initializeSearchLayout();
         this.initializeDialogs();
     }
@@ -135,6 +140,12 @@ public class MainController implements ApplicationListener<NewSessionEvent> {
 
     private void initializeWorkingLayout() {
         this.initializeWorkingTreeTable();
+        this.initializeWorkingStatusBar();
+    }
+
+    private void initializeWorkingStatusBar() {
+        workingStatusBar = new StatusBar();
+        workingTreeLayout.getChildren().add(workingStatusBar);
     }
 
     private void initializeWorkingTreeTable() {
@@ -156,6 +167,7 @@ public class MainController implements ApplicationListener<NewSessionEvent> {
 
     private void initializeSearchField() {
         searchField = TextFields.createClearableTextField();
+        TextFields.bindAutoCompletion(searchField, param -> searchService.getQueries());
         searchField.setPadding(new Insets(7., 5., 5., 7.));
         HBox.setMargin(searchField, new Insets(10., 20., 20., 10.));
         searchField.setOnKeyPressed(event -> {
@@ -178,6 +190,7 @@ public class MainController implements ApplicationListener<NewSessionEvent> {
         });
     }
 
+    @SuppressWarnings("unchecked")
     private void tuneTableRow(IndexedCell<FileEntity> row, Runnable onEmpty) {
         row.setOnMouseClicked(event -> {
             final IndexedCell<FileEntity> source = (IndexedCell<FileEntity>) event.getSource();
@@ -193,7 +206,9 @@ public class MainController implements ApplicationListener<NewSessionEvent> {
     }
 
     private void initializeSearchPagination() {
-        searchResultText.textProperty().bind(searchService.currentNumberOfElementsProperty());
+        searchResultText.textProperty().bind(Bindings.createStringBinding(
+                        () -> searchService.getCurrentNumberOfElements().toString(),
+                        searchService.currentNumberOfElementsProperty()));
         searchPagination.currentPageIndexProperty().addListener((observable, oldValue, newValue) -> {
             final List<FileEntity> files = searchService.getSlice(newValue.intValue());
             searchTable.getItems().setAll(files);
@@ -201,18 +216,24 @@ public class MainController implements ApplicationListener<NewSessionEvent> {
     }
 
     private void initializeDialogs() {
-        final Window owner = viewManager.getView("mainView").getView().getScene().getWindow();
         removeConfirmation = new Alert(Alert.AlertType.CONFIRMATION, "Are you sure?") {
             {
                 setTitle("Remove");
                 setHeaderText("Confirm operation!");
                 initModality(Modality.APPLICATION_MODAL);
-                initOwner(owner);
+                initOwner(getWindow());
+                setResultConverter(param -> param.equals(ButtonType.OK) ? param : null);
             }
         };
-        addDirectoryDialog = new CustomDialog(owner, "Add new directory", "Directory name");
+        NamingDialog addDirectoryDialog = new NamingDialog(getWindow(), "Add new directory", "Directory name");
         addDirectoryDialog.setInitialText("New directory");
-        renameFileDialog = new CustomDialog(owner, "Rename", "New name");
+        addDirectoryAction.setDialog(addDirectoryDialog);
+
+        final NamingDialog renameFileDialog = new NamingDialog(getWindow(), "Rename", "New name");
+        renameFileAction.setDialog(renameFileDialog);
+
+        final DownloadingDialog downloadingDialog = new DownloadingDialog(getWindow(), "Download", "Path");
+        downloadFileAction.setDialog(downloadingDialog);
     }
 
     private void initializeContextMenus() {
@@ -236,7 +257,7 @@ public class MainController implements ApplicationListener<NewSessionEvent> {
     }
 
     private void initializeRemoveFilesActionLogic() {
-        Predicate<Integer> emptyPredicate = (i) -> i == 0;
+        Predicate<ObservableList<?>> emptyPredicate = (l) -> l.size() == 0;
         final BooleanBinding removeActionLogic = or2Tables(emptyPredicate);
         removeFilesAction.disabledProperty().bind(removeActionLogic);
     }
@@ -246,10 +267,19 @@ public class MainController implements ApplicationListener<NewSessionEvent> {
         addFilesAction.disabledProperty().bind(addActionLogic);
     }
 
+    @SuppressWarnings("unchecked")
     private void initializeOpenActionLogic() {
-        Predicate<Integer> singleSelectionPredicate = (i) -> i == 1;
-        final BooleanBinding openActionLogic = or2Tables(singleSelectionPredicate);
-        openFileAction.disabledProperty().bind(openActionLogic.not());
+        Predicate<ObservableList<?>> singleSelectionPredicate = (l) -> l.size() == 1;
+        final BooleanBinding openActionLogic = or2Tables(singleSelectionPredicate).not()
+                .or(getWorkingTableSelectionBinding((l) -> {
+                    final ObservableList<TreeItem<FileEntity>> items = (ObservableList<TreeItem<FileEntity>>) l;
+                    return items.isEmpty() || items.get(0).getValue().isDirectory();
+                }))
+                .or(getSearchTableSelectionBinding((l) -> {
+                    final ObservableList<FileEntity> items = (ObservableList<FileEntity>) l;
+                    return items.isEmpty() || items.get(0).isDirectory();
+                }));
+        openFileAction.disabledProperty().bind(openActionLogic);
     }
 
     private void initializeAddDirectoryActionLogic() {
@@ -257,29 +287,30 @@ public class MainController implements ApplicationListener<NewSessionEvent> {
     }
 
     private void initializeRenameFileActionLogic() {
-        Predicate<Integer> singleSelectionPredicate = (i) -> i == 1;
+        Predicate<ObservableList<?>> singleSelectionPredicate = (l) -> l.size() == 1;
         final BooleanBinding renameFileActionLogic = or2Tables(singleSelectionPredicate);
         renameFileAction.disabledProperty().bind(renameFileActionLogic.not());
     }
 
-    private BooleanBinding or2Tables(Predicate<Integer> predicate) {
+    private <T> BooleanBinding or2Tables(Predicate<ObservableList<? extends T>> predicate) {
         final BooleanBinding WorkingTableSelection = getWorkingTableSelectionBinding(predicate);
         final BooleanBinding SearchTableSelection = getSearchTableSelectionBinding(predicate);
         return SearchTableSelection.or(WorkingTableSelection);
     }
 
-    private BooleanBinding getWorkingTableSelectionBinding(Predicate<Integer> predicate) {
+    private <T> BooleanBinding getWorkingTableSelectionBinding(Predicate<ObservableList<? extends T>> predicate) {
         return getTableSelectionBinding(workingTreeTable.getSelectionModel(), predicate)
                 .and(getPaneVisibleBinding(workingTreeLayout));
     }
 
-    private BooleanBinding getSearchTableSelectionBinding(Predicate<Integer> predicate) {
+    private <T> BooleanBinding getSearchTableSelectionBinding(Predicate<ObservableList<? extends T>> predicate) {
         return getTableSelectionBinding(searchTable.getSelectionModel(), predicate)
                 .and(getPaneVisibleBinding(searchLayout));
     }
 
-    private BooleanBinding getTableSelectionBinding(TableSelectionModel model, Predicate<Integer> predicate) {
-        return Bindings.createBooleanBinding(() -> predicate.test(model.getSelectedItems().size()), model.getSelectedItems());
+    @SuppressWarnings("unchecked")
+    private <T> BooleanBinding getTableSelectionBinding(TableSelectionModel model, Predicate<ObservableList<? extends T>> predicate) {
+        return Bindings.createBooleanBinding(() -> predicate.test(model.getSelectedItems()), model.getSelectedItems());
     }
 
     private BooleanBinding getPaneVisibleBinding(Pane pane) {
@@ -322,7 +353,16 @@ public class MainController implements ApplicationListener<NewSessionEvent> {
         return selectedItem;
     }
 
-    public void handleSearch(ActionEvent actionEvent) {
+    private void deselect() {
+        if (workingTreeLayout.isVisible()) {
+            workingTreeTable.getSelectionModel().clearSelection();
+        } else {
+            searchTable.getSelectionModel().clearSelection();
+        }
+    }
+
+    @SuppressWarnings("unused")
+    private void handleSearch(ActionEvent actionEvent) {
         final String query = searchField.getText();
         final List<FileEntity> files = searchService.startNewSearch(query);
         final int pageCount = searchService.getPageCount();
@@ -338,24 +378,25 @@ public class MainController implements ApplicationListener<NewSessionEvent> {
     }
 
     public void handleChangeTheme() {
-        cssDriver.setNext(viewManager.getCurrentView().getView().getScene());
+        cssDriver.setNext(getWindow().getScene());
     }
 
     @Bean("addFilesAction")
     private Action addFilesAction() {
         final MainController controller = this;
-        return new Action("Add files") {
-            private final ExecutorService executor = Executors.newWorkStealingPool();
-
+        return new CustomAction("Add files", workingStatusBar) {
             {
                 setAccelerator(new KeyCodeCombination(KeyCode.A, KeyCombination.ALT_DOWN));
                 setEventHandler((e) -> {
                     List<File> selectedFiles = selectFiles();
                     final TreeItem<FileEntity> parent = controller.determineParentItem();
-                    executor.submit(() -> {
-                        final Collection<FileEntity> files = fileService.addFiles(parent.getValue(), selectedFiles);
-                        parent.getChildren().addAll(files.stream().map(controller::createNode).collect(Collectors.toList()));
+                    parent.getChildren(); // fetching files from db to avoid duplicates
+                    final Task<Collection<FileEntity>> task = fileService.addFiles(parent.getValue(), selectedFiles);
+                    task.setOnSucceeded(event -> {
+                        final Collection<FileEntity> files = (Collection<FileEntity>) event.getSource().getValue();
+                        parent.getChildren().addAll(files.stream().map(controller::createNode).collect(Collectors.toSet()));
                     });
+                    this.handleTask(task);
                 });
             }
 
@@ -363,43 +404,96 @@ public class MainController implements ApplicationListener<NewSessionEvent> {
                 FileChooser fileChooser = new FileChooser();
                 fileChooser.setTitle("Select files");
                 fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("All", "*.*"));
-                final List<File> files = fileChooser.showOpenMultipleDialog(viewManager.getCurrentView().getView().getScene().getWindow());
+                final List<File> files = fileChooser.showOpenMultipleDialog(getWindow());
                 return files == null ? Lists.newArrayList() : files;
             }
         };
     }
 
     @Bean("removeFilesAction")
-    public Action removeFilesAction() {
-        return new Action("Remove") {
+    public CustomAction removeFilesAction() {
+        return new CustomAction("Remove", workingStatusBar) {
             {
                 setAccelerator(new KeyCodeCombination(KeyCode.DELETE));
-                setEventHandler((e) -> {
+                setEventHandler(e -> {
                     final Optional<ButtonType> confirmation = removeConfirmation.showAndWait();
-                    if (confirmation.isPresent() && confirmation.get().equals(ButtonType.OK)) {
-                        final List<FileEntity> files = determineSourceItems();
-                        fileService.removeFiles(files);
-                        update();
+                    confirmation.ifPresent(
+                            buttonType -> {
+                                final List<FileEntity> files = determineSourceItems();
+                                MainController.this.deselect();
+                                final Map<FileEntity, Collection<FileEntity>> parentToFilesMap = getParentToFilesMap(files);
+                                final Task<Collection<FileEntity>> task = fileService.removeFiles(Updater.flat(parentToFilesMap.values()));
+                                task.setOnSucceeded(ev -> {
+                                    parentToFilesMap.forEach(FileEntity::removeChildren);
+                                    this.removeAndUpdate(mapToTable(parentToFilesMap));
+                                });
+                                this.handleTask(task);
+                    });
+                });
+            }
+
+            private Map<FileEntity, Collection<FileEntity>> getParentToFilesMap(List<FileEntity> files) {
+                final Map<FileEntity, Collection<FileEntity>> entireParentToFilesMap = getEntireParentToFilesMap(files);
+                return getFilteredParentToFilesMap(entireParentToFilesMap, files);
+            }
+
+            private Map<FileEntity, Collection<FileEntity>> getEntireParentToFilesMap(List<FileEntity> files) {
+                Map<FileEntity, Collection<FileEntity>> parentToFiles = new HashMap<>();
+                files.forEach(f -> {
+                    final FileEntity parent = f.getParent();
+                    if (parentToFiles.containsKey(parent)) {
+                        parentToFiles.get(parent).add(f);
+                    } else {
+                        parentToFiles.put(parent, Lists.newArrayList(f));
                     }
                 });
+                return parentToFiles;
+            }
+
+            private Map<FileEntity, Collection<FileEntity>> getFilteredParentToFilesMap(Map<FileEntity, Collection<FileEntity>> entireParentToFilesMap, List<FileEntity> files) {
+                final Iterator<FileEntity> iterator = entireParentToFilesMap.keySet().iterator();
+                while (iterator.hasNext()) {
+                    final FileEntity next = iterator.next();
+                    if (files.contains(next)) {
+                        files.removeAll(next.getChildren());
+                        iterator.remove();
+                    }
+                }
+                return entireParentToFilesMap;
+            }
+
+            private Map<TreeItem<FileEntity>, Collection<TreeItem<FileEntity>>> mapToTable(Map<FileEntity, Collection<FileEntity>> map) {
+                Map<TreeItem<FileEntity>, Collection<TreeItem<FileEntity>>> tableMap = new HashMap<>();
+                map.forEach((key, value) -> {
+                    final TreeItem<FileEntity> newKey = Updater.findItem(workingTreeTable.getRoot(), key);
+                    final Set<TreeItem<FileEntity>> newValue = Updater.findItems(newKey, value.toArray(new FileEntity[0]));
+                    tableMap.put(newKey, newValue);
+                });
+                return tableMap;
+            }
+
+            private void removeAndUpdate(Map<TreeItem<FileEntity>, Collection<TreeItem<FileEntity>>> parentToFilesMap) {
+                parentToFilesMap.forEach((k, v) -> k.getChildren().removeAll(v));
+                MainController.this.refresh();
             }
         };
     }
 
     @Bean("addDirectoryAction")
-    private Action addDirectoryAction() {
-        return new NamingAction("Add directory") {
+    private NamingAction addDirectoryAction() {
+        return new NamingAction("Add directory", workingStatusBar) {
             {
                 setEventHandler((e) -> {
                     final TreeItem<FileEntity> parent = determineParentItem();
-                    final List<String> childrenNames = getChildrenNames(parent, directory);
-                    addDirectoryDialog.reattachValidator(Validator.createPredicateValidator(
-                            (o) -> !childrenNames.contains(o.toString()),
-                            "Already in this directory"));
-                    final Optional<String> result = addDirectoryDialog.showAndWait();
+                    this.addNameCrossingValidator(parent);
+                    final Optional<String> result = dialog.showAndWait();
                     if (result.isPresent()) {
-                        final Collection<FileEntity> files = fileService.addDirectory(parent.getValue(), result.get());
-                        parent.getChildren().addAll(files.stream().map(MainController.this::createNode).collect(Collectors.toList()));
+                        final Task<Collection<FileEntity>> task = fileService.addDirectory(parent.getValue(), result.get());
+                        task.setOnSucceeded(event -> {
+                            final Collection<FileEntity> files = (Collection<FileEntity>) event.getSource().getValue();
+                            parent.getChildren().addAll(files.stream().map(MainController.this::createNode).collect(Collectors.toList()));
+                        });
+                        this.handleTask(task);
                     }
                 });
                 setAccelerator(new KeyCodeCombination(KeyCode.A, KeyCombination.CONTROL_DOWN, KeyCombination.ALT_DOWN));
@@ -408,21 +502,20 @@ public class MainController implements ApplicationListener<NewSessionEvent> {
     }
 
     @Bean("renameFileAction")
-    private Action renameFileAction() {
-        return new NamingAction("Rename") {
+    private NamingAction renameFileAction() {
+        return new NamingAction("Rename", workingStatusBar) {
             {
                 setEventHandler((e) -> {
                     final TreeItem<FileEntity> source = determineSourceItem();
                     final FileEntity value = source.getValue();
-                    renameFileDialog.setInitialText(value.getFilename());
-                    final List<String> childrenNames = getChildrenNames(source.getParent(), value.isFile() ? file : directory);
-                    renameFileDialog.reattachValidator(Validator.createPredicateValidator(
-                            (o) -> !childrenNames.contains(o.toString()),
-                            "Already in this directory"));
-                    Optional<String> result = renameFileDialog.showAndWait();
+                    dialog.setInitialText(value.getFilename());
+                    this.addNameCrossingValidator(source.getParent());
+                    Optional<String> result = dialog.showAndWait();
                     result.ifPresent(s -> {
-                        fileService.renameFile(value, s);
-                        update();
+                        final Task<FileEntity> task = fileService.renameFile(value, s);
+                        // TODO parallel execution issue
+                        refresh();
+                        this.handleTask(task);
                     });
                 });
                 setAccelerator(new KeyCodeCombination(KeyCode.R, KeyCombination.SHORTCUT_DOWN));
@@ -432,63 +525,56 @@ public class MainController implements ApplicationListener<NewSessionEvent> {
 
     @Bean("openFileAction")
     private Action openFileAction() {
-        return new Action("Open...") {
+        return new CustomAction("Open...", workingStatusBar) {
             {
                 setEventHandler((e) -> {
                     final TreeItem<FileEntity> source = determineSourceItem();
-                    List<Future<Object>> futures;
-                    try {
-                        futures = fileService.openFile(source.getValue());
-                    } catch (InterruptedException | IOException e1) {
-                        showExceptionDialog(e1);
-                        return;
-                    }
-                    executor.submit(() -> futures.forEach((f) -> {
-                        try {
-                            f.get();
-                        } catch (InterruptedException | ExecutionException e1) {
-                            Platform.runLater(() ->showExceptionDialog(e1));
-                        }
-                    }));
+                    final Task<Void> task = fileService.openFile(source.getValue());
+                    this.handleTask(task);
                 });
                 setAccelerator(new KeyCodeCombination(KeyCode.O, KeyCombination.SHORTCUT_DOWN));
-            }
-
-            private void showExceptionDialog(Exception e) {
-                ExceptionDialog dlg;
-                try {
-                    dlg = new ExceptionDialog(e);
-                } catch (Throwable ex) {
-                    ex.printStackTrace();
-                    return;
-                }
-                dlg.setTitle("IOException");
-                dlg.setContentText("Cannot open file");
-                dlg.show();
             }
         };
     }
 
     @Bean("downloadFileAction")
-    private Action downloadFileAction() {
-        final Action openAction = new Action("Download", (e) -> {
-            System.out.println("Download");
-        });
-        openAction.setAccelerator(new KeyCodeCombination(KeyCode.S, KeyCombination.SHORTCUT_DOWN));
-        return openAction;
+    private DialogAction<? extends DownloadContext, DownloadingDialog> downloadFileAction() {
+        return new DialogAction<SimpleDownloadContext, DownloadingDialog>("Download", workingStatusBar) {
+            {
+                setEventHandler((e) -> {
+                    Optional<SimpleDownloadContext> result = dialog.showAndWait();
+                    if (result.isPresent()) {
+                        final SimpleDownloadContext context = result.get();
+                        final List<FileEntity> fileEntities = determineSourceItems();
+                        final Task<Collection<File>> task = fileService.downloadFiles(context, fileEntities);
+                        this.handleTask(task);
+                    }
+                });
+                setAccelerator(new KeyCodeCombination(KeyCode.S, KeyCombination.SHORTCUT_DOWN));
+            }
+        };
     }
 
-    private void update() {
-        Updater.update(workingTreeTable);
+    private Window getWindow() {
+        return viewManager.getView("mainView").getView().getScene().getWindow();
+    }
+
+    private void refresh() {
+        workingTreeTable.refresh();
+        this.updateSearch();
+    }
+
+    private void updateSearch() {
         if (searchLayout.isVisible())
             handleSearch(new ActionEvent());
     }
 
-    private static class CustomDialog extends Dialog<String> {
+    @SuppressWarnings({"unchecked", "unused", "SameParameterValue"})
+    private static class CustomDialog<T> extends Dialog<T> {
         private ValidationSupport vs = new ValidationSupport();
         private TextField textField;
-        private String initialText;
-        List<Validator<Object>> registeredValidators = new ArrayList<>();
+        private ButtonType okButton;
+        List<Validator<?>> registeredValidators = new ArrayList<>();
         final Validator<Object> emptyValidator = Validator.createEmptyValidator("Cannot be empty");
 
         CustomDialog(Window owner, String title, String labelText) {
@@ -496,51 +582,71 @@ public class MainController implements ApplicationListener<NewSessionEvent> {
             initOwner(owner);
             setTitle(title);
 
+            final GridPane grid = createGridPane();
+            addValidatedInputTextRow(grid, labelText, 0, 0);
+            addStuff(grid);
+            final DecorationPane decorationPane = decorateContent(grid);
+            getDialogPane().setContent(decorationPane);
+
+            okButton = addValidatedButtons();
+            Platform.runLater(() -> textField.requestFocus());
+        }
+
+        GridPane createGridPane() {
             GridPane grid = new GridPane();
             grid.setVgap(10);
             grid.setHgap(10);
+            return grid;
+        }
 
+        void addValidatedInputTextRow(GridPane grid, String labelText, int leftCol, int row) {
             Label label = new Label(labelText);
-            grid.add(label, 0, 0);
+            grid.add(label, leftCol, row);
             textField = createTextField("textField");
             registeredValidators.add(emptyValidator);
-            vs.registerValidator(textField, emptyValidator);
-            grid.add(textField, 1, 0);
+            this.resetValidators();
+            grid.add(textField, ++leftCol, row);
+        }
 
-            Platform.runLater(() -> textField.requestFocus());
+        void addStuff(GridPane gridPane) {}
 
-            DecorationPane decorationPane = new DecorationPane();
-            decorationPane.getChildren().add(grid);
-            getDialogPane().setContent(decorationPane);
-
+        ButtonType addValidatedButtons() {
             final ButtonType ok = new ButtonType("Ok", ButtonBar.ButtonData.OK_DONE);
             getDialogPane().getButtonTypes().addAll(ButtonType.CANCEL, ok);
             getDialogPane().lookupButton(ok).disableProperty().bind(vs.invalidProperty());
-
-            setResultConverter(dialogButton -> dialogButton == ok ? textField.getText() : null);
+            return ok;
         }
 
-        String getInitialText() {
-            return initialText;
+        private DecorationPane decorateContent(Pane pane) {
+            DecorationPane decorationPane = new DecorationPane();
+            decorationPane.getChildren().add(pane);
+            return decorationPane;
+        }
+
+        TextField getTextField() {
+            return textField;
+        }
+
+        ButtonType getOkButton() {
+            return okButton;
         }
 
         void setInitialText(String initialText) {
-            this.initialText = initialText;
             setOnShowing((e) -> textField.setText(initialText));
         }
 
         void resetValidators() {
-            registeredValidators = Lists.newArrayList(emptyValidator);
-        }
-
-        @SuppressWarnings("unchecked")
-        void reattachValidator(Validator<Object> validator) {
-            final Validator<Object>[] validators = ArrayUtils.add(registeredValidators.toArray(new Validator[0]) ,validator);
+            final Validator<Object>[] validators = registeredValidators.toArray(new Validator[0]);
             final Validator<Object> combined = Validator.combine(validators);
             vs.registerValidator(textField, combined);
         }
 
-        @SuppressWarnings("unchecked")
+        void reattachValidator(Validator<Object> validator) {
+            final Validator<Object>[] validators = ArrayUtils.add(registeredValidators.toArray(new Validator[0]), validator);
+            final Validator<Object> combined = Validator.combine(validators);
+            vs.registerValidator(textField, combined);
+        }
+
         void addValidator(Validator<Object> validator) {
             registeredValidators.add(validator);
             final Validator<Object>[] validators = registeredValidators.toArray(new Validator[0]);
@@ -556,30 +662,197 @@ public class MainController implements ApplicationListener<NewSessionEvent> {
         }
     }
 
-    private static class NamingAction extends Action {
-        Predicate<TreeItem<FileEntity>> file = (f) -> f.getValue().isFile();
+    private static class NamingDialog extends CustomDialog<String> {
+        final Validator<String> symbolValidator =
+                Validator.createRegexValidator("Allowed symbols: a-zA-Z0-9_.", Pattern.compile(".*[a-zA-Z0-9_.].*"), null);
+        NamingDialog(Window owner, String title, String labelText) {
+            super(owner, title, labelText);
+            registeredValidators.add(symbolValidator);
+            this.resetValidators();
+            setResultConverter(dialogButton -> dialogButton == getOkButton() ? getTextField().getText() : null);
+        }
+    }
 
-        Predicate<TreeItem<FileEntity>> directory = (f) -> f.getValue().isDirectory();
+    private class DownloadingDialog extends CustomDialog<SimpleDownloadContext> {
+        private CheckBox checkBox;
+        private final Window window;
+        private File file = new File("/");
 
-        Predicate<TreeItem<FileEntity>> both = (f) -> true;
+        DownloadingDialog(Window owner, String title, String labelText) {
+            super(owner, title, labelText);
+            this.window = owner;
+            setOnShowing(e -> getTextField().setText(file.getAbsolutePath()));
+            setResultConverter(dialogButton -> {
+                if (dialogButton == getOkButton()) {
+                    boolean createParentIfNotExists = false;
+                    file = new File(getTextField().getText());
+                    if (!file.exists()) {
+                        createParentIfNotExists = showCreateIfNotExistsDialog(file);
+                    }
+                    return SimpleDownloadContext.create(file, checkBox.isSelected(), createParentIfNotExists);
+                } else
+                    return null;
+            });
+        }
 
-        public NamingAction(String text) {
+        private boolean showCreateIfNotExistsDialog(File file) {
+            Alert dlg = new Alert(Alert.AlertType.CONFIRMATION, file.getAbsolutePath() + " doesn't exists. Create?");
+            dlg.initModality(Modality.APPLICATION_MODAL);
+            dlg.initOwner(getWindow());
+            dlg.setTitle("Confirmation");
+            final Optional<ButtonType> result = dlg.showAndWait();
+            return result.isPresent() && result.get() == ButtonType.OK;
+        }
+
+        @Override
+        void setInitialText(String initialText) {}
+
+        @Override
+        void addStuff(GridPane gridPane) {
+            ImageView graphics = new ImageView(new Image("static/pics/folder-icon.png"));
+            graphics.setFitWidth(20.);
+            graphics.setFitHeight(20.);
+            Button button = new Button("", graphics);
+            button.setOnAction(event -> {
+                File file = selectDirectory();
+                this.file = file == null ? this.file : file;
+                getTextField().setText(this.file.getAbsolutePath());
+            });
+            gridPane.add(button, 2, 0);
+            checkBox = new CheckBox("Replace existing");
+            gridPane.add(checkBox,0, 1);
+        }
+
+        private File selectDirectory() {
+            final DirectoryChooser directoryChooser = new DirectoryChooser();
+            directoryChooser.setInitialDirectory(file);
+            directoryChooser.setTitle("Download");
+            return directoryChooser.showDialog(window);
+        }
+    }
+
+    private static class CustomAction extends Action {
+        private final StatusBar statusBar;
+
+        private String previousStatus;
+
+        private Consumer<Throwable> onFail = (ex) -> Platform.runLater(() -> showExceptionDialog(ex));
+
+        CustomAction(String text, StatusBar statusBar) {
             super(text);
+            Objects.requireNonNull(statusBar);
+            this.statusBar = statusBar;
         }
 
-        public NamingAction(Consumer<ActionEvent> eventHandler) {
+        CustomAction(Consumer<ActionEvent> eventHandler, StatusBar statusBar) {
             super(eventHandler);
+            Objects.requireNonNull(statusBar);
+            this.statusBar = statusBar;
         }
 
-        public NamingAction(String text, Consumer<ActionEvent> eventHandler) {
+        CustomAction(String text, Consumer<ActionEvent> eventHandler, StatusBar statusBar) {
             super(text, eventHandler);
+            Objects.requireNonNull(statusBar);
+            this.statusBar = statusBar;
         }
 
-        List<String> getChildrenNames(TreeItem<FileEntity> parent, Predicate<TreeItem<FileEntity>> p) {
+        Consumer<Throwable> getOnFail() {
+            return onFail;
+        }
+
+        public void setOnFail(Consumer<Throwable> onFail) {
+            this.onFail = onFail;
+        }
+
+        private void showExceptionDialog(Throwable e) {
+            ExceptionDialog dlg;
+            dlg = new ExceptionDialog(e);
+            dlg.setTitle("IOException");
+            dlg.setContentText("Cannot open file");
+            dlg.show();
+        }
+
+        <T> void handleTask(Task<T> task) {
+            this.bindToStatusBar(task);
+            this.setUnbindFinally(task);
+            task.setOnFailed(ev -> {
+                getOnFail().accept(ev.getSource().getException());
+                ev.getSource().cancel();
+            });
+        }
+
+        private <T> void setUnbindFinally(Task<T> task) {
+            task.addEventHandler(WorkerStateEvent.ANY, event -> {
+                final Worker source = event.getSource();
+                final State state = source.getState();
+                if (state == State.CANCELLED || state == State.SUCCEEDED || state == State.FAILED)
+                    this.unbind(statusBar);
+            });
+        }
+
+        private void bindToStatusBar(Task task) {
+            previousStatus = statusBar.getText();
+            statusBar.textProperty().bind(task.messageProperty());
+            statusBar.progressProperty().bind(task.progressProperty());
+        }
+
+        private void unbind(StatusBar statusBar) {
+            statusBar.textProperty().unbind();
+            statusBar.progressProperty().unbind();
+            statusBar.setText(previousStatus);
+        }
+    }
+
+    @SuppressWarnings("unused")
+    private static class DialogAction<R, T extends CustomDialog<? extends R>> extends CustomAction {
+        T dialog;
+
+        DialogAction(String text, StatusBar statusBar) {
+            super(text, statusBar);
+        }
+
+        DialogAction(Consumer<ActionEvent> eventHandler, StatusBar statusBar) {
+            super(eventHandler, statusBar);
+        }
+
+        DialogAction(String text, Consumer<ActionEvent> eventHandler, StatusBar statusBar) {
+            super(text, eventHandler, statusBar);
+        }
+
+        void setDialog(T dialog) {
+            this.dialog = dialog;
+        }
+    }
+
+    @SuppressWarnings("unused")
+    private static class NamingAction extends DialogAction<String, NamingDialog> {
+        NamingAction(String text, StatusBar statusBar) {
+            super(text, statusBar);
+        }
+
+        NamingAction(Consumer<ActionEvent> eventHandler, StatusBar statusBar) {
+            super(eventHandler, statusBar);
+        }
+
+        NamingAction(String text, Consumer<ActionEvent> eventHandler, StatusBar statusBar) {
+            super(text, eventHandler, statusBar);
+        }
+
+        void setDialog(NamingDialog dialog) {
+            this.dialog = dialog;
+        }
+
+        List<String> getChildrenNames(TreeItem<FileEntity> parent) {
             return parent.getChildren().stream()
-                    .filter(p)
                     .map((f) -> f.getValue().getFilename())
                     .collect(Collectors.toList());
+        }
+
+        void addNameCrossingValidator(TreeItem<FileEntity> parent) {
+            final List<String> childrenNames = getChildrenNames(parent);
+            dialog.reattachValidator(Validator.createPredicateValidator(
+                    (o) -> !childrenNames.contains(o.toString()),
+                    "Already in this directory"));
         }
     }
 
