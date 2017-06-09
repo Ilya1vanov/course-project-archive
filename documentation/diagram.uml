@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Diagram>
+  <ID>JAVA</ID>
+  <OriginalElement />
+  <nodes>
+    <node x="1375.6178707224335" y="557.1330798479088">com.ilya.ivanov.view.AbstractJavaFxApplicationSupport</node>
+    <node x="-13.48859315589334" y="1385.3517110266162">com.ilya.ivanov.security.session.ActivityType</node>
+    <node x="1351.7129277566542" y="821.6140684410649">com.ilya.ivanov.service.user.DefaultUserService</node>
+    <node x="1066.4828897338402" y="982.7832699619773">com.ilya.ivanov.service.file.DownloadContext</node>
+    <node x="1076.5152091254747" y="420.9828897338406">com.ilya.ivanov.view.CSSDriver.Style</node>
+    <node x="1024.1844106463877" y="1100.423954372623">com.ilya.ivanov.data.repository.FileRepository</node>
+    <node x="1653.810525157326" y="662.5694053204569">com.ilya.ivanov.security.authentication.AuthenticationService</node>
+    <node x="1438.1216730038022" y="7.676806083650206">com.ilya.ivanov.aspect.ActivityTrackingAspect</node>
+    <node x="1018.1444866920147" y="821.1064638783271">com.ilya.ivanov.service.file.FileConflictContext</node>
+    <node x="418.1425855513303" y="1094.1806083650192">com.ilya.ivanov.service.file.DefaultFileService</node>
+    <node x="1018.625475285171" y="7.365019011407185">com.ilya.ivanov.view.DesktopManager</node>
+    <node x="1581.422053231939" y="1079.2927756653992">com.ilya.ivanov.service.file.FileService</node>
+    <node x="416.0171102661602" y="1480.258463940485">com.ilya.ivanov.service.file.DefaultFileService.CustomTask</node>
+    <node x="1020.5228136882126" y="287.5684410646393">com.ilya.ivanov.view.CSSDriver</node>
+    <node x="-3.8384030418251314" y="3.8384030418251314">com.ilya.ivanov.data.model.file.FileEntity</node>
+    <node x="1024.6226235741447" y="558.161596958175">com.ilya.ivanov.ArchiveApplication</node>
+    <node x="1419.2443210977574" y="731.7366452565001">com.ilya.ivanov.service.user.AutocompletionService</node>
+    <node x="1686.2319391634983" y="545.754752851711">com.ilya.ivanov.security.registration.CredentialsPolicy</node>
+    <node x="-2.3244558312674712" y="1096.7680442998853">com.ilya.ivanov.data.model.file.FileDto</node>
+    <node x="1021.4904942965782" y="157.06273764258583">com.ilya.ivanov.data.constraints.validator.EmailValidator</node>
+  </nodes>
+  <notes />
+  <edges>
+    <edge source="com.ilya.ivanov.service.file.DownloadContext" target="com.ilya.ivanov.service.file.FileConflictContext">
+      <point x="0.0" y="-40.0" />
+      <point x="0.0" y="52.0" />
+    </edge>
+    <edge source="com.ilya.ivanov.ArchiveApplication" target="com.ilya.ivanov.view.AbstractJavaFxApplicationSupport">
+      <point x="-85.0" y="-112.0" />
+      <point x="1288.3455308938212" y="668.7134073185363" />
+      <point x="1311.7134073185364" y="594.5299940011997" />
+      <point x="0.0" y="52.0" />
+    </edge>
+    <edge source="com.ilya.ivanov.view.CSSDriver.Style" target="com.ilya.ivanov.view.CSSDriver">
+      <point x="0.0" y="-52.5" />
+      <point x="0.0" y="52.5" />
+    </edge>
+    <edge source="com.ilya.ivanov.service.user.DefaultUserService" target="com.ilya.ivanov.service.user.AutocompletionService">
+      <point x="0.0" y="-112.5" />
+      <point x="0.0" y="28.0" />
+    </edge>
+    <edge source="com.ilya.ivanov.service.file.DefaultFileService.CustomTask" target="com.ilya.ivanov.service.file.DefaultFileService">
+      <point x="0.0" y="-28.0" />
+      <point x="0.0" y="184.5" />
+    </edge>
+    <edge source="com.ilya.ivanov.service.user.DefaultUserService" target="com.ilya.ivanov.security.authentication.AuthenticationService">
+      <point x="-239.0" y="-112.5" />
+      <point x="1855.0209958008397" y="853.1666166766647" />
+      <point x="1858.7225554889023" y="818.3458308338331" />
+      <point x="0.0" y="28.0" />
+    </edge>
+    <edge source="com.ilya.ivanov.service.file.DefaultFileService" target="com.ilya.ivanov.service.file.FileService">
+      <point x="-141.75" y="-184.5" />
+      <point x="991.1975567729964" y="1273.5351241495096" />
+      <point x="1246.7470005998798" y="1277.103207563842" />
+      <point x="0.0" y="88.0" />
+    </edge>
+  </edges>
+  <settings layout="Hierarchic Group" zoom="0.46052501238236754" x="927.2316627231662" y="1118.087330608733" />
+  <SelectedNodes>
+    <node>com.ilya.ivanov.service.file.DefaultFileService.CustomTask</node>
+  </SelectedNodes>
+  <Categories>
+    <Category>Inner Classes</Category>
+    <Category>Constructors</Category>
+    <Category>Methods</Category>
+  </Categories>
+  <SCOPE>All</SCOPE>
+  <VISIBILITY>private</VISIBILITY>
+</Diagram>
+
